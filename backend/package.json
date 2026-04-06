@@ -1,0 +1,25 @@
+{
+  "name": "purrfectscan-backend",
+  "version": "1.0.0",
+  "description": "PurrfectScan - 반려묘 안전/건강 복합 관리 앱 백엔드 서버",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node data/toxicitySeeds.js"
+  },
+  "keywords": ["cat", "pet", "health", "scanner", "toxicity"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.0",
+    "openai": "^4.20.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
