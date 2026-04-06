@@ -30,6 +30,7 @@ import { COLORS, getRiskColor, getTypeColor } from '../styles/colors';
 import { getTimeline, addTimelineEntry } from '../services/api';
 import useStore from '../store/useStore';
 import TimelineItem from '../components/TimelineItem';
+import TimelineDateGroup from '../components/TimelineDateGroup';
 
 export default function TimelineScreen() {
   // ─── 로컬 상태 ───
@@ -133,11 +134,41 @@ export default function TimelineScreen() {
     : timelineData.filter(item => item.type === activeFilter);
 
   /**
+   * 타임라인 데이터를 날짜별로 그룹화
+   * 결과 형태: [{ date: 'YYYY-MM-DD', items: [...], isToday: boolean }]
+   */
+  const groupedData = React.useMemo(() => {
+    const groups = {};
+    const today = new Date().toISOString().split('T')[0];
+
+    filteredData.forEach(item => {
+      const dateKey = new Date(item.timestamp).toISOString().split('T')[0];
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(item);
+    });
+
+    // 날짜 역순 정렬 (최신 날짜가 먼저)
+    return Object.keys(groups)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .map(date => ({
+        date,
+        items: groups[date].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
+        isToday: date === today,
+      }));
+  }, [filteredData]);
+
+  /**
    * Mock 타임라인 데이터 생성 (서버 미연결 시)
+   * 여러 날짜에 걸친 샘플 데이터로 날짜별 그룹화 UI 테스트 지원
    */
   const getMockTimeline = () => {
     const now = new Date();
+    const DAY = 24 * 60 * 60 * 1000; // 하루를 밀리초로
+
     return [
+      // ─── 오늘 기록 ───
       {
         _id: 'mock_1',
         type: 'PLANT',
@@ -159,20 +190,44 @@ export default function TimelineScreen() {
         riskLevel: 'NONE',
         timestamp: new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString(),
       },
+      // ─── 어제 기록 ───
       {
         _id: 'mock_4',
         type: 'INGREDIENT',
         content: '오리젠 캣&키튼 사료 성분 스캔 - 안전',
         riskLevel: 'SAFE',
         palatabilityRating: 4,
-        timestamp: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
+        timestamp: new Date(now.getTime() - 1 * DAY - 2 * 60 * 60 * 1000).toISOString(),
       },
       {
         _id: 'mock_5',
         type: 'CHAT',
         content: '"참치캔 급여해도 될까요?" 질의',
         riskLevel: 'WARNING',
-        timestamp: new Date(now.getTime() - 0.5 * 60 * 60 * 1000).toISOString(),
+        timestamp: new Date(now.getTime() - 1 * DAY - 5 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        _id: 'mock_6',
+        type: 'INGREDIENT',
+        content: '츄르 참치맛 성분표 스캔 - 안전',
+        riskLevel: 'SAFE',
+        palatabilityRating: 5,
+        timestamp: new Date(now.getTime() - 1 * DAY - 8 * 60 * 60 * 1000).toISOString(),
+      },
+      // ─── 3일 전 기록 ───
+      {
+        _id: 'mock_7',
+        type: 'PLANT',
+        content: '접란 (Spider Plant) - 베란다에서 스캔',
+        riskLevel: 'SAFE',
+        timestamp: new Date(now.getTime() - 3 * DAY - 4 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        _id: 'mock_8',
+        type: 'SYMPTOM',
+        content: '식욕 정상, 활동량 양호',
+        riskLevel: 'NONE',
+        timestamp: new Date(now.getTime() - 3 * DAY - 10 * 60 * 60 * 1000).toISOString(),
       },
     ];
   };
@@ -243,15 +298,15 @@ export default function TimelineScreen() {
         />
       </View>
 
-      {/* 타임라인 목록 */}
+      {/* 타임라인 목록 (날짜별 그룹화) */}
       <FlatList
-        data={filteredData}
-        keyExtractor={item => item._id}
-        renderItem={({ item, index }) => (
-          <TimelineItem
-            item={item}
-            isFirst={index === 0}
-            isLast={index === filteredData.length - 1}
+        data={groupedData}
+        keyExtractor={item => item.date}
+        renderItem={({ item }) => (
+          <TimelineDateGroup
+            date={item.date}
+            items={item.items}
+            isToday={item.isToday}
           />
         )}
         contentContainerStyle={styles.timelineList}
