@@ -1,0 +1,254 @@
+---
+description: PurrfectScan 프로젝트 전체 컨텍스트 및 AI 기억이식 파일. 이 파일은 새로운 환경에서 작업을 이어갈 때 AI가 프로젝트의 맥락을 완벽히 이해할 수 있도록 작성되었습니다.
+globs: **/*
+alwaysApply: true
+---
+
+# 🧠 PurrfectScan AI 기억이식 장치 (Project Memory)
+
+> **이 파일의 목적:** 다른 컴퓨터에서 git clone 후 AI(Cursor)가 이 파일을 읽으면,
+> 프로젝트의 전체 맥락·약속·진행 상황을 기억하고 이전과 동일하게 작업을 이어갈 수 있습니다.
+> **마지막 업데이트:** 2026-04-06
+
+---
+
+## 📌 1. 프로젝트 기본 정보
+
+- **프로젝트명:** PurrfectScan (반려묘 안전/건강 복합 관리 앱)
+- **GitHub:** https://github.com/syoon624/cat-poison-scanner.git
+- **목적:** 식물/사물/성분표를 스캔하여 고양이에게 유해한 성분을 판별하고, 건강 기록을 타임라인으로 관리하는 iOS 앱
+- **타겟 플랫폼:** iOS (Expo + EAS Build)
+- **주요 언어:** JavaScript (Full-Stack 100% JS)
+
+---
+
+## 📌 2. 반드시 지켜야 할 약속 사항
+
+### 2-1. 응답 언어
+- **항상 한국어로 응답할 것**
+
+### 2-2. 커밋 컨벤션
+작업할 때마다 커밋하고 main에 push한다. 커밋 메시지는 아래 접두사를 따른다:
+
+| 접두사 | 용도 |
+|--------|------|
+| `feat:` | 새로운 기능 추가 |
+| `fix:` | 버그 수정 |
+| `docs:` | 문서 수정 |
+| `style:` | 코드 스타일 변경 (포매팅, 세미콜론 누락 등) |
+| `design:` | 사용자 UI 디자인 변경 (CSS 등) |
+| `test:` | 테스트 코드, 리팩토링 (Test Code) |
+| `refactor:` | 리팩토링 (Production Code) |
+| `build:` | 빌드 파일 수정 |
+| `ci:` | CI 설정 파일 수정 |
+| `perf:` | 성능 개선 |
+| `chore:` | 자잘한 수정이나 빌드 업데이트 |
+| `rename:` | 파일 혹은 폴더명을 수정만 한 경우 |
+| `remove:` | 파일을 삭제만 한 경우 |
+
+### 2-3. 코드 주석
+- 코드를 이해하기 위한 **주석을 많이 달아줄수록 좋다** (사용자 요청사항)
+- 파일 상단에 파일의 역할과 기능을 설명하는 블록 주석 작성
+- 함수마다 JSDoc 스타일 주석 작성
+- 중요 로직에 인라인 주석 작성
+
+### 2-4. 브랜치 전략
+- 기본적으로 main 브랜치에서 작업
+- 필요 시 feature 브랜치를 분기하여 작업 가능 (AI 재량)
+- 작업 완료 후 main에 push
+
+### 2-5. API 키 관리
+- 실제 API 키가 필요할 때 사용자에게 요청
+- `.env` 파일은 절대 커밋하지 않음
+- `.env.example` 파일에 필요한 환경 변수 목록 유지
+
+---
+
+## 📌 3. 기술 스택 상세
+
+### Front-End (frontend/)
+| 항목 | 기술 |
+|------|------|
+| Framework | React Native + Expo (SDK 54) |
+| State | Zustand |
+| Navigation | React Navigation (Bottom Tabs) |
+| Camera | expo-camera, expo-image-picker |
+| Styling | StyleSheet (타임라인은 CSS 트리구조) |
+| Network | Axios |
+
+### Back-End (backend/)
+| 항목 | 기술 |
+|------|------|
+| Framework | Node.js + Express.js |
+| File Upload | Multer |
+| Database | MongoDB + Mongoose |
+| AI/Vision | Google Cloud Vision API (예정) |
+| LLM | OpenAI API (예정) |
+
+---
+
+## 📌 4. 프로젝트 디렉토리 구조
+
+```
+catpoison/
+├── .cursor/rules/          # Cursor AI 규칙 (이 파일 포함)
+├── backend/
+│   ├── config/db.js        # MongoDB 연결 설정
+│   ├── controllers/
+│   │   ├── scanController.js    # 이미지 스캔 로직 (현재 Mock)
+│   │   ├── chatController.js    # 챗봇 로직 (키워드 매칭 + DB)
+│   │   └── timelineController.js # 타임라인 CRUD
+│   ├── data/toxicitySeeds.js    # 독성 DB 시드 데이터 (21종)
+│   ├── middleware/upload.js     # Multer 파일 업로드
+│   ├── models/
+│   │   ├── User.js         # 사용자 모델
+│   │   ├── Cat.js          # 고양이 프로필 모델
+│   │   ├── ScanLog.js      # 스캔/이벤트 기록 모델
+│   │   └── ToxicityDB.js   # 독성 물질 사전 모델
+│   ├── routes/
+│   │   ├── scan.js         # POST /api/scan/image
+│   │   ├── chat.js         # POST /api/chat/ask
+│   │   └── timeline.js     # GET/POST /api/timeline
+│   ├── server.js           # Express 서버 진입점
+│   ├── package.json
+│   └── .env.example        # 환경 변수 템플릿
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ScanResultCard.js    # 스캔 결과 카드
+│   │   │   ├── TimelineItem.js      # 타임라인 개별 항목
+│   │   │   └── TimelineDateGroup.js # 날짜별 그룹 래퍼
+│   │   ├── navigation/
+│   │   │   └── AppNavigator.js      # Bottom Tab 네비게이션
+│   │   ├── screens/
+│   │   │   ├── ScannerScreen.js     # 카메라/OCR 스캔 화면
+│   │   │   ├── ChatScreen.js        # 냥챗 화면
+│   │   │   └── TimelineScreen.js    # 타임라인 화면
+│   │   ├── services/api.js          # Axios API 통신 모듈
+│   │   ├── store/useStore.js        # Zustand 전역 상태
+│   │   └── styles/colors.js         # 컬러 팔레트 + 유틸
+│   ├── App.js              # 앱 진입점
+│   └── package.json
+├── README.md
+└── LICENSE (MIT)
+```
+
+---
+
+## 📌 5. API 엔드포인트
+
+| Method | Endpoint | 설명 | 상태 |
+|--------|----------|------|------|
+| POST | `/api/scan/image` | 이미지 분석 (FormData: image + scanType) | ✅ Mock 구현 |
+| POST | `/api/chat/ask` | 텍스트 독성 질의 (JSON: message) | ✅ Mock 구현 |
+| GET | `/api/timeline/:catId` | 타임라인 조회 | ✅ Mock 구현 |
+| POST | `/api/timeline` | 타임라인 기록 추가 | ✅ Mock 구현 |
+| GET | `/api/health` | 서버 상태 확인 | ✅ 구현 완료 |
+
+---
+
+## 📌 6. DB 스키마 요약
+
+### Users
+`{ _id, email, passwordHash, createdAt }`
+
+### Cats
+`{ _id, userId(→User), name, birthDate, weight, preExistingConditions:[] }`
+
+### ScanLogs (타임라인 핵심)
+`{ _id, userId, catId, type(PLANT|INGREDIENT|CHAT|SYMPTOM|HOSPITAL), content, riskLevel(SAFE|WARNING|TOXIC|NONE), imageUrl, palatabilityRating(1~5), timestamp }`
+
+### ToxicityDB (독성 사전)
+`{ itemName, itemNameKo, aliases:[], category(PLANT|FOOD|CHEMICAL), toxicityLevel(HIGH|MEDIUM|LOW), symptoms:[], description }`
+
+---
+
+## 📌 7. 개발 진행 상황
+
+### ✅ 완료된 Phase
+
+#### Phase 1: Backend 뼈대 (커밋: `e69f1d0`)
+- Express.js 서버 초기화, CORS, JSON 파싱
+- MongoDB Mongoose 모델 4개 (User, Cat, ScanLog, ToxicityDB)
+- 3개 API 라우트 + 컨트롤러 (Mock 응답)
+- Multer 파일 업로드 미들웨어
+- 독성 DB 시드 데이터 21종
+
+#### Phase 2: Frontend Expo 앱 (커밋: `876bce3`)
+- Expo 프로젝트 생성 (SDK 54, blank 템플릿)
+- React Navigation Bottom Tabs (스캐너/냥챗/타임라인)
+- ScannerScreen: expo-camera 연동, object/ocr 모드 전환, 결과 모달
+- ChatScreen: 채팅 UI, 빠른 질문 버튼, 타이핑 인디케이터
+- TimelineScreen: 타임라인 목록, 필터, 기록 추가 모달
+- Zustand 상태 관리, Axios API 서비스
+- 서버 미연결 시 Mock 폴백 로직
+
+#### Phase 3: 타임라인 UI 강화 (커밋: `1e84cd3`)
+- TimelineItem: 수직 연결선 + 원형 노드 (border-left 구현)
+- TimelineDateGroup: 날짜별 그룹화 + 오늘 뱃지
+- 다양한 날짜에 걸친 Mock 데이터 확장
+- README.md 전면 업데이트
+
+### 🔲 미완료 / 다음 단계
+
+1. **Google Cloud Vision API 연동** (사물 인식 + OCR)
+   - scanController.js의 Mock 로직을 실제 API 호출로 교체
+   - 필요: `GOOGLE_CLOUD_VISION_API_KEY`
+
+2. **OpenAI API 연동** (LLM 기반 독성 판단)
+   - chatController.js의 Mock 로직을 OpenAI 호출로 교체
+   - 추출된 텍스트 + ToxicityDB를 프롬프트에 결합하여 정확한 판단
+   - 필요: `OPENAI_API_KEY`
+
+3. **MongoDB Atlas 연동** (프로덕션 DB)
+   - 현재 로컬 MongoDB 사용
+   - 필요: `MONGODB_URI` (Atlas 연결 문자열)
+
+4. **사용자 인증 시스템** (회원가입/로그인)
+   - JWT 또는 세션 기반 인증
+   - User 모델 활용
+
+5. **EAS Build 설정** (iOS 빌드)
+   - eas.json 구성
+   - Apple Developer 계정 연동
+
+6. **이미지 클라우드 스토리지** (S3 또는 Firebase Storage)
+   - 현재 로컬 uploads/ 폴더 사용
+
+---
+
+## 📌 8. 핵심 설계 결정 기록
+
+| 결정 사항 | 선택 | 이유 |
+|-----------|------|------|
+| 상태 관리 | Zustand | 가볍고 보일러플레이트 최소화 |
+| DB | MongoDB | 유연한 JSON 스키마, ScanLog 다형성 지원 |
+| 스캔 결과 피드백 | 3단계 컬러 (Safe/Warning/Toxic) | 직관적 UX, 명세서 요구사항 |
+| 타임라인 UI | 수직 트리 (border-left + 원형 노드) | 명세서의 CSS 트리구조 요구사항 준수 |
+| Mock 폴백 | 서버 미연결 시 프론트엔드 자체 Mock | 개발 편의성, 프론트/백 독립 테스트 |
+| 법적 고지 | 모든 스캔 결과에 상시 노출 | 명세서 필수 요구사항 |
+
+---
+
+## 📌 9. 주의사항
+
+- **법적 고지 문구**는 스캔 결과가 표시되는 모든 곳에 반드시 포함:
+  > "⚠️ 본 결과는 참고용이며, 최종 판단 및 응급 상황은 수의사와 상담하십시오."
+- **위험도 컬러**: Toxic은 **네온 레드(#FF1744)** 사용 (명세서 강조 사항)
+- **독성 DB 시드 데이터**는 21종이 등록되어 있으며, 확장 가능
+- **PowerShell 환경**에서 작업 중 (Windows) — HEREDOC(`<<EOF`) 미지원, `&&` 대신 `;` 사용
+
+---
+
+## 📌 10. Git 설정 (로컬 저장소)
+
+```
+git config user.name "syoon624"
+git config user.email "syoon624@users.noreply.github.com"
+```
+
+> 새 환경에서 clone 후 위 설정을 로컬에 적용하면 동일한 Git identity로 커밋 가능.
+
+---
+
+*이 파일은 프로젝트 진행에 따라 지속적으로 업데이트됩니다.*
