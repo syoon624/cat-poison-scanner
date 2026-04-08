@@ -30,7 +30,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "https://purrfectscan-api.onrender.com"
+      "apiUrl": "https://cat-poison-scanner.onrender.com"
     }
   }
 }

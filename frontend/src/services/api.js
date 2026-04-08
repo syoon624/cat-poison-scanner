@@ -20,7 +20,7 @@ import Constants from 'expo-constants';
 // Render.com 배포 URL이 설정되면 자동으로 클라우드 서버 사용
 const API_BASE_URL =
   Constants.expoConfig?.extra?.apiUrl ||
-  'https://purrfectscan-api.onrender.com';
+  'https://cat-poison-scanner.onrender.com';
 
 /**
  * Axios 인스턴스 생성
