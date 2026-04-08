@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "PurrfectScan",
+    "slug": "purrfectscan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,20 +10,27 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#6C63FF"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "식물/사물 스캔과 성분표 OCR을 위해 카메라 접근이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "갤러리에서 이미지를 선택하여 분석하기 위해 접근이 필요합니다."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#6C63FF"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "https://purrfectscan-api.onrender.com"
     }
   }
 }

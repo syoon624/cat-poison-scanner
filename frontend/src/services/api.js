@@ -8,15 +8,19 @@
  * 에러 처리와 응답 변환을 중앙에서 관리합니다.
  * 
  * 환경 설정:
- * - 개발: http://localhost:5000
- * - 프로덕션: 배포된 서버 URL로 변경 필요
+ * - 개발: http://localhost:5000 (app.json extra.apiUrl로 오버라이드 가능)
+ * - 프로덕션: Render.com 배포 URL 사용
  */
 
 import axios from 'axios';
+import Constants from 'expo-constants';
 
 // 백엔드 서버 기본 URL
-// TODO: 프로덕션 배포 시 환경 변수로 관리
-const API_BASE_URL = 'http://localhost:5000';
+// Expo의 expoConfig.extra에서 설정값을 읽거나, 기본값 사용
+// Render.com 배포 URL이 설정되면 자동으로 클라우드 서버 사용
+const API_BASE_URL =
+  Constants.expoConfig?.extra?.apiUrl ||
+  'https://purrfectscan-api.onrender.com';
 
 /**
  * Axios 인스턴스 생성
@@ -25,7 +29,7 @@ const API_BASE_URL = 'http://localhost:5000';
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

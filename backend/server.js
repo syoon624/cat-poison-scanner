@@ -102,8 +102,8 @@ const startServer = async () => {
     console.warn('   (MongoDB 없이도 API 테스트 가능합니다)');
   }
 
-  // Express 서버 리스닝 시작
-  app.listen(PORT, () => {
+  // Express 서버 리스닝 시작 (0.0.0.0으로 바인딩하여 클라우드 환경 호환)
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`🐱 PurrfectScan 서버가 포트 ${PORT}에서 실행 중입니다.`);
     console.log(`📍 Health Check: http://localhost:${PORT}/api/health`);
     console.log(`📍 챗봇 테스트: POST http://localhost:${PORT}/api/chat/ask`);
