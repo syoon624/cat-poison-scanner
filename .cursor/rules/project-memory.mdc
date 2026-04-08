@@ -8,7 +8,7 @@ alwaysApply: true
 
 > **이 파일의 목적:** 다른 컴퓨터에서 git clone 후 AI(Cursor)가 이 파일을 읽으면,
 > 프로젝트의 전체 맥락·약속·진행 상황을 기억하고 이전과 동일하게 작업을 이어갈 수 있습니다.
-> **마지막 업데이트:** 2026-04-06
+> **마지막 업데이트:** 2026-04-08
 
 ---
 
@@ -37,7 +37,9 @@ alwaysApply: true
 - **프로젝트명:** PurrfectScan (반려묘 안전/건강 복합 관리 앱)
 - **GitHub:** https://github.com/syoon624/cat-poison-scanner.git
 - **목적:** 식물/사물/성분표를 스캔하여 고양이에게 유해한 성분을 판별하고, 건강 기록을 타임라인으로 관리하는 iOS 앱
-- **타겟 플랫폼:** iOS (Expo + EAS Build)
+- **타겟 플랫폼:** iOS (Expo Go로 실행, EAS Build 미사용)
+- **배포 백엔드:** https://cat-poison-scanner.onrender.com (Render.com 무료)
+- **DB:** MongoDB Atlas M0 (cluster0.asxy82g.mongodb.net/purrfectscan)
 - **주요 언어:** JavaScript (Full-Stack 100% JS)
 
 ---
@@ -152,6 +154,7 @@ catpoison/
 │   │   └── styles/colors.js         # 컬러 팔레트 + 유틸
 │   ├── App.js              # 앱 진입점
 │   └── package.json
+├── render.yaml            # Render.com 배포 설정 파일
 ├── README.md
 └── LICENSE (MIT)
 ```
@@ -224,22 +227,30 @@ catpoison/
 - chatController.js 전면 교체: OpenAI + DB 검색 통합
 - 모든 API에 폴백 체인 구현 (API 실패 → DB 매칭 → Mock)
 
+#### Phase 5: 클라우드 배포 + 아이폰 실행 (커밋: 이번 세션)
+- MongoDB Atlas 무료 클러스터 연결 (M0, cluster0.asxy82g.mongodb.net)
+- 독성 DB 시드 데이터 18종 Atlas에 삽입 완료
+- Render.com 백엔드 배포 완료: https://cat-poison-scanner.onrender.com
+- render.yaml 배포 설정 파일 추가
+- backend/package.json에 engines 필드 추가
+- backend/server.js에 0.0.0.0 바인딩 (클라우드 호환)
+- frontend API URL → Render 배포 URL로 변경
+- frontend/app.json: 앱 이름 "PurrfectScan", iOS 카메라 권한 설명, extra.apiUrl 설정
+- expo-constants 패키지 설치 (환경 설정 읽기용)
+- Expo Go 앱으로 아이폰에서 실행 가능 (LAN 모드)
+
 ### 🔲 미완료 / 다음 단계
 
-1. **MongoDB Atlas 연동** (프로덕션 DB)
-   - 현재 로컬 MongoDB 사용
-   - 필요: `MONGODB_URI` (Atlas 연결 문자열)
-
-4. **사용자 인증 시스템** (회원가입/로그인)
+1. **사용자 인증 시스템** (회원가입/로그인)
    - JWT 또는 세션 기반 인증
    - User 모델 활용
 
-5. **EAS Build 설정** (iOS 빌드)
-   - eas.json 구성
-   - Apple Developer 계정 연동
-
-6. **이미지 클라우드 스토리지** (S3 또는 Firebase Storage)
+2. **이미지 클라우드 스토리지** (S3 또는 Firebase Storage)
    - 현재 로컬 uploads/ 폴더 사용
+
+3. **독립 앱 빌드** (EAS Build)
+   - Apple Developer 계정($99/년) 필요
+   - 현재는 Expo Go로 실행 가능
 
 ---
 
@@ -329,6 +340,40 @@ git config user.email "syoon624@users.noreply.github.com"
 - 사용자가 API 키를 발급하면 .env에 설정 후 실제 테스트
 - MongoDB Atlas 연동 (Phase 5)
 - 사용자 인증 (JWT) 구현
+
+### 📝 세션 #3 — 2026-04-08 (Phase 5: 클라우드 배포 + 아이폰 실행)
+
+**환경:** Windows 10 / PowerShell / Cursor  
+**작업 범위:** Phase 5 - MongoDB Atlas + Render.com 배포 + Expo Go 아이폰 실행
+
+| 순서 | 작업 내용 | 커밋 메시지 | 커밋 해시 |
+|------|-----------|-------------|-----------|
+| 1 | backend/package.json에 engines 필드 추가, server.js 0.0.0.0 바인딩, render.yaml 생성, frontend API URL 변경, app.json 업데이트, expo-constants 설치 | `build: 클라우드 배포 설정 추가 (Render.com + MongoDB Atlas 준비)` | `f73e4d1` |
+| 2 | MongoDB Atlas 연결 (비밀번호 URL 인코딩 적용), 독성 시드 데이터 18종 삽입 | (코드 커밋 불필요 - .env는 gitignore) | — |
+| 3 | Render.com 백엔드 배포 완료, Health Check 정상 확인 | — | — |
+| 4 | 프론트엔드 API URL을 Render 배포 URL로 교체 | `feat: Render.com 배포 URL 연결 (프론트엔드 API URL 업데이트)` | `33efe72` |
+| 5 | Expo Go 실행 (LAN 모드, ngrok tunnel 타임아웃 이슈) | — | — |
+| 6 | 기억이식 파일 Phase 5 업데이트 | (이번 커밋) | — |
+
+**세션 요약:**
+- MongoDB Atlas M0 무료 클러스터 연결 완료 (cluster0.asxy82g.mongodb.net/purrfectscan)
+- 비밀번호 특수문자(!@#) URL 인코딩 이슈 해결
+- Render.com 백엔드 배포 완료: https://cat-poison-scanner.onrender.com
+- 프론트엔드 API URL을 Render 배포 URL로 변경, 타임아웃 30초로 증가 (콜드 스타트 대비)
+- Expo Go의 --tunnel 모드는 네트워크 환경에서 ngrok 차단으로 실패, --lan 모드로 대체
+- Render 무료 티어는 15분 비활동 시 슬립 → 첫 요청 시 콜드 스타트 30~60초 소요
+
+**아이폰 실행 방법:**
+1. PC와 아이폰을 같은 WiFi에 연결
+2. `cd frontend && npx expo start` 실행
+3. 아이폰 App Store에서 "Expo Go" 설치
+4. Expo Go 앱에서 QR 코드 스캔 또는 URL 직접 입력
+5. 같은 WiFi 불가능한 환경이면 `npx expo start --tunnel` 시도 (ngrok 필요)
+
+**다음 세션에서 이어할 사항:**
+- 사용자 인증 시스템 (JWT) 구현
+- 이미지 클라우드 스토리지 연동
+- EAS Build (독립 앱) - Apple Developer 계정 필요
 
 ---
 
