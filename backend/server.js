@@ -94,20 +94,21 @@ const PORT = process.env.PORT || 5000;
  * 3. 연결 실패 시 에러 로그 출력 후 종료
  */
 const startServer = async () => {
+  // MongoDB 연결 시도 (실패해도 서버는 시작 - 컨트롤러에 폴백 로직 있음)
   try {
-    // MongoDB 연결
     await connectDB();
-    
-    // Express 서버 리스닝 시작
-    app.listen(PORT, () => {
-      console.log(`🐱 PurrfectScan 서버가 포트 ${PORT}에서 실행 중입니다.`);
-      console.log(`📍 Health Check: http://localhost:${PORT}/api/health`);
-      console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (error) {
-    console.error('서버 시작 실패:', error.message);
-    process.exit(1);
+    console.warn('⚠️ MongoDB 연결 실패 - Mock 모드로 동작합니다:', error.message);
+    console.warn('   (MongoDB 없이도 API 테스트 가능합니다)');
   }
+
+  // Express 서버 리스닝 시작
+  app.listen(PORT, () => {
+    console.log(`🐱 PurrfectScan 서버가 포트 ${PORT}에서 실행 중입니다.`);
+    console.log(`📍 Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`📍 챗봇 테스트: POST http://localhost:${PORT}/api/chat/ask`);
+    console.log(`🌍 환경: ${process.env.NODE_ENV || 'development'}`);
+  });
 };
 
 startServer();
