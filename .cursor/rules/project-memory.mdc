@@ -18,12 +18,15 @@ alwaysApply: true
 1. **이 파일을 처음부터 끝까지 읽는다.**
 2. 섹션 2의 "반드시 지켜야 할 약속 사항"을 숙지한다 (한국어 응답, 커밋 컨벤션, 주석 등).
 3. 섹션 7의 "개발 진행 상황"을 확인하여 현재 어디까지 완료되었는지 파악한다.
-4. 섹션 11의 "작업 로그"를 확인하여 가장 최근에 어떤 작업이 이루어졌는지 파악한다.
-5. 위 내용을 모두 파악한 뒤 사용자의 요청에 맞게 작업을 시작한다.
+4. 섹션 9의 "새 환경 셋업 가이드"를 참고하여 환경이 올바르게 구성되었는지 확인한다.
+5. 섹션 12의 "작업 로그"를 확인하여 가장 최근에 어떤 작업이 이루어졌는지 파악한다.
+6. `backend/.env` 존재 여부 확인. 없으면 사용자에게 생성 요청한다.
+7. `backend/node_modules`, `frontend/node_modules` 존재 여부 확인. 없으면 `npm install`을 실행한다.
+8. 위 내용을 모두 파악한 뒤 사용자의 요청에 맞게 작업을 시작한다.
 
 ### 작업 완료 후
 1. **이 파일의 "섹션 7. 개발 진행 상황"을 업데이트**한다 (완료된 항목 체크, 새 항목 추가 등).
-2. **이 파일의 "섹션 11. 작업 로그"에 해당 세션의 작업 내역을 추가**한다.
+2. **이 파일의 "섹션 12. 작업 로그"에 해당 세션의 작업 내역을 추가**한다.
 3. 새 파일이나 디렉토리를 만들었다면 **섹션 4. 디렉토리 구조**도 업데이트한다.
 4. 이 파일의 변경 사항도 함께 **커밋 & push**한다.
 
@@ -215,7 +218,7 @@ catpoison/
 - 다양한 날짜에 걸친 Mock 데이터 확장
 - README.md 전면 업데이트
 
-#### Phase 4: AI API 실연동 (커밋: 이번 세션)
+#### Phase 4: AI API 실연동 (커밋: `dfbd661`)
 - Google Cloud Vision API 연동 (visionService.js)
   - detectLabels: 라벨 감지 + 웹 엔티티 (LABEL_DETECTION + WEB_DETECTION)
   - extractText: OCR 텍스트 추출 (TEXT_DETECTION, ko+en 힌트)
@@ -227,7 +230,7 @@ catpoison/
 - chatController.js 전면 교체: OpenAI + DB 검색 통합
 - 모든 API에 폴백 체인 구현 (API 실패 → DB 매칭 → Mock)
 
-#### Phase 5: 클라우드 배포 + 아이폰 실행 (커밋: 이번 세션)
+#### Phase 5: 클라우드 배포 + 아이폰 실행 (커밋: `f73e4d1` ~ `dc3be83`)
 - MongoDB Atlas 무료 클러스터 연결 (M0, cluster0.asxy82g.mongodb.net)
 - 독성 DB 시드 데이터 18종 Atlas에 삽입 완료
 - Render.com 백엔드 배포 완료: https://cat-poison-scanner.onrender.com
@@ -267,17 +270,123 @@ catpoison/
 
 ---
 
-## 📌 9. 주의사항
+## 📌 9. 새 환경 셋업 가이드 (Clone 후 즉시 실행)
+
+> 새 컴퓨터에서 이 프로젝트를 clone한 뒤, 아래 순서를 따르면 환경 구축이 완료됩니다.
+> **사용자가 직접 해야 하는 것은 `.env` 파일 생성뿐**입니다.
+
+### 9-1. 사전 요구사항
+
+| 항목 | 최소 버전 | 확인 명령어 |
+|------|-----------|-------------|
+| Node.js | v18+ | `node -v` |
+| npm | v9+ | `npm -v` |
+| Git | 최신 | `git --version` |
+
+### 9-2. 프로젝트 클론 및 Git 설정
+
+```bash
+git clone https://github.com/syoon624/cat-poison-scanner.git
+cd cat-poison-scanner
+git config user.name "syoon624"
+git config user.email "syoon624@users.noreply.github.com"
+```
+
+### 9-3. 백엔드 설정
+
+```bash
+cd backend
+npm install
+```
+
+**`.env` 파일 생성** (사용자가 직접):
+- `.env.example`을 복사하여 `.env` 생성
+- 아래 4개 값을 실제 값으로 교체:
+
+| 변수 | 설명 | 비고 |
+|------|------|------|
+| `MONGODB_URI` | MongoDB Atlas 연결 문자열 | 비밀번호 특수문자 URL 인코딩 필수 (`!`→`%21`, `@`→`%40`, `#`→`%23`) |
+| `OPENAI_API_KEY` | OpenAI API 키 | `sk-proj-...` 형태 |
+| `GOOGLE_CLOUD_VISION_API_KEY` | Google Vision API 키 | `AIza...` 형태 |
+| `PORT` | 로컬 서버 포트 | 기본값 5000 |
+
+> **참고:** MongoDB Atlas에는 이미 시드 데이터(18종 독성 물질)가 삽입되어 있으므로
+> `npm run seed`를 다시 실행할 필요 없음. 필요 시 `npm run seed`로 재삽입 가능.
+
+**로컬 서버 테스트:**
+```bash
+npm run dev
+# → http://localhost:5000/api/health 접속하여 정상 확인
+```
+
+### 9-4. 프론트엔드 설정
+
+```bash
+cd ../frontend
+npm install
+```
+
+> `npm install`만 하면 모든 의존성(expo, react-navigation, zustand, axios, expo-camera,
+> expo-image-picker, expo-constants, @expo/ngrok 등)이 자동 설치됩니다.
+
+### 9-5. 아이폰에서 앱 실행 (Expo Go)
+
+**방법 A: 같은 WiFi (가장 간단)**
+```bash
+cd frontend
+npx expo start
+```
+- 아이폰과 PC를 **같은 WiFi**에 연결
+- 아이폰에서 **Expo Go** 앱 설치 (App Store 무료)
+- Expo Go에서 터미널에 표시된 QR 코드 스캔 또는 URL 직접 입력
+
+**방법 B: 다른 네트워크 (핫스팟)**
+- 아이폰에서 **개인용 핫스팟** 켜기
+- PC를 아이폰 핫스팟에 WiFi 연결
+- 위와 동일하게 `npx expo start` → Expo Go 스캔
+
+**방법 C: 터널 모드 (네트워크 무관, 불안정할 수 있음)**
+```bash
+cd frontend
+npx expo start --tunnel
+```
+- ngrok 터널을 통해 인터넷 경유로 연결
+- ⚠️ 대학교/기업 네트워크에서는 ngrok이 차단될 수 있음
+
+### 9-6. 이미 배포된 클라우드 서비스
+
+| 서비스 | URL/위치 | 상태 |
+|--------|----------|------|
+| 백엔드 API | https://cat-poison-scanner.onrender.com | ✅ 배포 완료 |
+| Health Check | https://cat-poison-scanner.onrender.com/api/health | ✅ 정상 |
+| MongoDB Atlas | cluster0.asxy82g.mongodb.net/purrfectscan | ✅ 시드 데이터 삽입 완료 |
+| Render 대시보드 | https://dashboard.render.com (GitHub 로그인) | 환경 변수 설정 완료 |
+
+> **Render.com 무료 티어 주의:** 15분 비활동 시 슬립 → 첫 요청 시 콜드 스타트 30~60초 소요.
+> 프론트엔드의 API 타임아웃은 30초로 설정되어 있어 콜드 스타트를 커버합니다.
+
+### 9-7. AI가 새 환경에서 해야 할 일 (자동)
+
+새 환경에서 AI(Cursor)에게 작업을 요청하면, AI는:
+1. 이 파일을 읽고 프로젝트 맥락 파악
+2. `backend/.env` 파일 존재 여부 확인 → 없으면 사용자에게 생성 요청
+3. `node_modules` 존재 여부 확인 → 없으면 `npm install` 실행 (backend/ + frontend/ 둘 다)
+4. 작업 완료 후 이 파일 업데이트 + 커밋 & push
+
+---
+
+## 📌 10. 주의사항
 
 - **법적 고지 문구**는 스캔 결과가 표시되는 모든 곳에 반드시 포함:
   > "⚠️ 본 결과는 참고용이며, 최종 판단 및 응급 상황은 수의사와 상담하십시오."
 - **위험도 컬러**: Toxic은 **네온 레드(#FF1744)** 사용 (명세서 강조 사항)
-- **독성 DB 시드 데이터**는 21종이 등록되어 있으며, 확장 가능
-- **PowerShell 환경**에서 작업 중 (Windows) — HEREDOC(`<<EOF`) 미지원, `&&` 대신 `;` 사용
+- **독성 DB 시드 데이터**는 18종이 Atlas에 등록되어 있으며, 확장 가능
+- **PowerShell 환경** (Windows) — HEREDOC(`<<EOF`) 미지원, `&&` 대신 `;` 사용
+- **Mac/Linux 환경**에서는 `&&` 사용 가능, 셸 구문 차이에 주의
 
 ---
 
-## 📌 10. Git 설정 (로컬 저장소)
+## 📌 11. Git 설정 (로컬 저장소)
 
 ```
 git config user.name "syoon624"
@@ -288,7 +397,7 @@ git config user.email "syoon624@users.noreply.github.com"
 
 ---
 
-## 📌 11. 작업 로그 (Work Log)
+## 📌 12. 작업 로그 (Work Log)
 
 > 아래 로그는 각 작업 세션에서 수행한 내용을 시간순으로 기록합니다.
 > 새로운 작업을 할 때마다 **반드시 여기에 기록을 추가**해주세요.
@@ -353,7 +462,7 @@ git config user.email "syoon624@users.noreply.github.com"
 | 3 | Render.com 백엔드 배포 완료, Health Check 정상 확인 | — | — |
 | 4 | 프론트엔드 API URL을 Render 배포 URL로 교체 | `feat: Render.com 배포 URL 연결 (프론트엔드 API URL 업데이트)` | `33efe72` |
 | 5 | Expo Go 실행 (LAN 모드, ngrok tunnel 타임아웃 이슈) | — | — |
-| 6 | 기억이식 파일 Phase 5 업데이트 | (이번 커밋) | — |
+| 6 | 기억이식 파일 Phase 5 업데이트 | `docs: 기억이식 파일 Phase 5 클라우드 배포 기록 업데이트` | `dc3be83` |
 
 **세션 요약:**
 - MongoDB Atlas M0 무료 클러스터 연결 완료 (cluster0.asxy82g.mongodb.net/purrfectscan)
