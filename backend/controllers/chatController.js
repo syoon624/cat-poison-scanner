@@ -5,36 +5,39 @@
  * 
  * '냥챗' 기능을 담당합니다.
  * 사용자가 텍스트로 독성 물질에 대해 질문하면,
- * ToxicityDB를 참조하여 답변을 생성합니다.
+ * ToxicityDB를 참조하고 OpenAI로 답변을 생성합니다.
  * 
- * 처리 흐름:
+ * 처리 흐름 (Phase 4):
  * 1. 사용자 메시지 수신
- * 2. 메시지에서 물질명 키워드 추출
- * 3. ToxicityDB에서 해당 물질 검색
- * 4. 검색 결과를 기반으로 응답 생성
+ * 2. ToxicityDB에서 관련 항목 검색 (키워드 + 텍스트 검색)
+ * 3. OpenAI API로 답변 생성 (DB 데이터를 컨텍스트로 전달)
+ * 4. 폴백: OpenAI 실패 → 키워드 매칭 기반 로컬 응답
  * 
- * [현재 Phase 1]
- * OpenAI API 연동 전이므로 키워드 매칭 기반
- * Mock 응답을 제공합니다.
+ * [Phase 4] OpenAI API 실연동
+ * - OpenAI 키 미설정 시 키워드 매칭으로 폴백
+ * - ToxicityDB 데이터를 프롬프트에 결합하여 정확도 향상
  */
 
 const ToxicityDB = require('../models/ToxicityDB');
+const { generateChatResponse } = require('../services/openaiService');
 
 /**
  * POST /api/chat/ask
  * 텍스트 기반 독성 물질 질의 처리
  * 
  * @param {string} req.body.message - 사용자의 질문 메시지
+ * @param {Array} [req.body.chatHistory] - 이전 대화 기록 (선택, 컨텍스트 유지용)
  * 
  * @returns {Object} 챗봇 응답
  * - success: boolean
  * - answer: 챗봇의 답변 텍스트
  * - relatedItems: 관련된 독성 DB 항목들
  * - disclaimer: 법적 고지
+ * - source: 응답 생성 방식 ('openai' | 'db-keyword' | 'local-mock')
  */
 const askChat = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, chatHistory } = req.body;
 
     // 메시지 유효성 검증
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -46,35 +49,38 @@ const askChat = async (req, res) => {
 
     console.log(`💬 챗봇 질의 수신: "${message}"`);
 
-    // ============================================
-    // ToxicityDB 검색 시도
-    // 우선 DB에서 키워드 매칭을 시도하고,
-    // DB에 데이터가 없으면 Mock 응답을 반환
-    // ============================================
-
-    let answer;
+    // ─── Step 1: ToxicityDB에서 관련 항목 검색 ───
     let relatedItems = [];
-
     try {
-      // MongoDB 텍스트 검색으로 관련 독성 물질 조회
-      relatedItems = await ToxicityDB.find(
-        { $text: { $search: message } },
-        { score: { $meta: 'textScore' } }
-      )
-      .sort({ score: { $meta: 'textScore' } })
-      .limit(5)
-      .lean();
+      relatedItems = await searchToxicityDB(message);
     } catch (dbError) {
-      // DB 연결 실패 시에도 Mock 응답은 제공
-      console.log('DB 검색 실패, Mock 응답으로 대체:', dbError.message);
+      console.warn('⚠️ ToxicityDB 검색 실패:', dbError.message);
     }
 
-    if (relatedItems.length > 0) {
-      // DB에서 관련 항목을 찾은 경우 → DB 기반 응답 생성
-      answer = generateDBBasedAnswer(message, relatedItems);
-    } else {
-      // DB에 없는 경우 → Mock 키워드 매칭 응답
-      answer = generateMockAnswer(message);
+    // ─── Step 2: OpenAI로 답변 생성 시도 ───
+    let answer;
+    let source = 'local-mock';
+
+    try {
+      const aiResponse = await generateChatResponse(
+        message,
+        relatedItems,
+        chatHistory || []
+      );
+      answer = aiResponse.answer;
+      source = 'openai';
+      console.log(`✅ OpenAI 챗봇 응답 생성 완료 (토큰: ${aiResponse.usage?.total_tokens || '?'})`);
+    } catch (aiError) {
+      console.warn('⚠️ OpenAI 응답 생성 실패, 폴백 사용:', aiError.message);
+
+      // ─── Step 3: 폴백 - DB 기반 또는 키워드 매칭 응답 ───
+      if (relatedItems.length > 0) {
+        answer = generateDBBasedAnswer(message, relatedItems);
+        source = 'db-keyword';
+      } else {
+        answer = generateLocalMockAnswer(message);
+        source = 'local-mock';
+      }
     }
 
     // 법적 고지
@@ -91,7 +97,8 @@ const askChat = async (req, res) => {
         toxicityLevel: item.toxicityLevel,
         symptoms: item.symptoms
       })),
-      disclaimer: legalDisclaimer
+      disclaimer: legalDisclaimer,
+      source // 응답 출처를 명시하여 디버깅/투명성 확보
     });
 
   } catch (error) {
@@ -105,7 +112,69 @@ const askChat = async (req, res) => {
 };
 
 /**
+ * ToxicityDB에서 사용자 메시지와 관련된 항목을 검색합니다.
+ * 
+ * 검색 전략 (우선순위 순):
+ * 1. MongoDB 텍스트 검색 ($text)
+ * 2. 정규식 직접 매칭 (itemName, itemNameKo, aliases)
+ * 
+ * @param {string} message - 사용자 메시지
+ * @returns {Array} 관련 ToxicityDB 항목 배열 (최대 5개)
+ */
+const searchToxicityDB = async (message) => {
+  let results = [];
+
+  // 방법 1: MongoDB 텍스트 인덱스 검색
+  try {
+    results = await ToxicityDB.find(
+      { $text: { $search: message } },
+      { score: { $meta: 'textScore' } }
+    )
+    .sort({ score: { $meta: 'textScore' } })
+    .limit(5)
+    .lean();
+  } catch (textSearchError) {
+    // 텍스트 인덱스가 없거나 검색 실패 시 무시
+  }
+
+  // 방법 2: 텍스트 검색 결과가 없으면 정규식 직접 매칭
+  if (results.length === 0) {
+    // 메시지에서 2글자 이상 단어 추출 (한글/영문)
+    const keywords = message.match(/[가-힣a-zA-Z]{2,}/g) || [];
+
+    for (const keyword of keywords) {
+      const regex = new RegExp(keyword, 'i');
+      const matches = await ToxicityDB.find({
+        $or: [
+          { itemName: regex },
+          { itemNameKo: regex },
+          { aliases: { $elemMatch: regex } }
+        ]
+      }).limit(3).lean();
+
+      results.push(...matches);
+    }
+
+    // 중복 제거 (같은 _id를 가진 항목)
+    const seen = new Set();
+    results = results.filter(item => {
+      const id = item._id.toString();
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    }).slice(0, 5);
+  }
+
+  if (results.length > 0) {
+    console.log(`🔍 ToxicityDB 검색 결과: ${results.length}건 (${results.map(r => r.itemNameKo || r.itemName).join(', ')})`);
+  }
+
+  return results;
+};
+
+/**
  * ToxicityDB 검색 결과를 기반으로 답변 텍스트 생성
+ * OpenAI 사용 불가 시 폴백으로 사용됩니다.
  * 
  * @param {string} question - 사용자 질문
  * @param {Array} items - DB에서 검색된 독성 물질 목록
@@ -114,7 +183,7 @@ const askChat = async (req, res) => {
 const generateDBBasedAnswer = (question, items) => {
   const topItem = items[0];
   
-  // 독성 수준에 따른 경고 메시지 분기
+  // 독성 수준에 따른 경고 아이콘
   const levelMessages = {
     HIGH: '🚨 매우 위험합니다!',
     MEDIUM: '⚠️ 주의가 필요합니다.',
@@ -126,49 +195,49 @@ const generateDBBasedAnswer = (question, items) => {
   answer += `독성 수준 [${topItem.toxicityLevel}]로 분류되어 있습니다.\n\n`;
 
   if (topItem.symptoms && topItem.symptoms.length > 0) {
-    answer += `예상 증상: ${topItem.symptoms.join(', ')}\n\n`;
+    answer += `📋 예상 증상: ${topItem.symptoms.join(', ')}\n\n`;
   }
 
   if (topItem.description) {
     answer += `${topItem.description}\n`;
   }
 
+  // 추가 관련 항목이 있으면 간단히 안내
+  if (items.length > 1) {
+    answer += `\n\n📚 관련 항목: ${items.slice(1).map(i => i.itemNameKo || i.itemName).join(', ')}`;
+  }
+
   return answer;
 };
 
 /**
- * Mock 키워드 매칭 기반 응답 생성
- * DB에 데이터가 없거나 연결 실패 시 사용되는 폴백 응답
+ * 로컬 Mock 키워드 매칭 응답
+ * DB 연결 실패 + OpenAI 실패 시 최후의 폴백
  * 
  * @param {string} message - 사용자 메시지
  * @returns {string} Mock 답변 텍스트
  */
-const generateMockAnswer = (message) => {
+const generateLocalMockAnswer = (message) => {
   const lowerMessage = message.toLowerCase();
 
-  // 키워드별 미리 정의된 응답 매핑
   const keywordResponses = {
     '백합': '🚨 백합(Lily)은 고양이에게 매우 위험한 식물입니다! 꽃가루, 잎, 줄기 모두 독성이 있으며, 소량 섭취만으로도 급성 신부전을 유발할 수 있습니다. 즉시 수의사에게 연락하세요.',
-    'lily': '🚨 백합(Lily)은 고양이에게 매우 위험한 식물입니다! 소량 섭취만으로도 급성 신부전을 유발할 수 있습니다.',
+    'lily': '🚨 백합(Lily)은 고양이에게 매우 위험한 식물입니다!',
     '초콜릿': '🚨 초콜릿에는 테오브로민이 포함되어 있어 고양이에게 위험합니다. 구토, 설사, 심박수 증가, 발작 등을 유발할 수 있습니다.',
-    'chocolate': '🚨 초콜릿(Chocolate)은 테오브로민 성분으로 인해 고양이에게 독성이 있습니다.',
     '양파': '🚨 양파는 고양이의 적혈구를 파괴하여 빈혈을 유발합니다. 생양파, 양파 가루 모두 위험합니다.',
-    '포도': '⚠️ 포도와 건포도는 고양이에게 신부전을 유발할 수 있습니다. 급여를 삼가해주세요.',
+    '포도': '⚠️ 포도와 건포도는 고양이에게 신부전을 유발할 수 있습니다.',
     '자일리톨': '🚨 자일리톨은 고양이에게 저혈당과 간 손상을 유발할 수 있는 매우 위험한 성분입니다.',
-    '참치': '💛 참치 자체는 독성이 없지만, 너무 자주 급여하면 수은 중독이나 영양 불균형이 발생할 수 있습니다. 간식으로 소량만 급여하세요.',
+    '참치': '💛 참치 자체는 독성이 없지만, 너무 자주 급여하면 수은 중독이나 영양 불균형이 발생할 수 있습니다.',
     '닭고기': '✅ 익힌 닭고기는 고양이에게 안전하고 좋은 단백질 공급원입니다. 단, 뼈와 양념은 제거해주세요.',
-    '안전': '✅ 고양이에게 안전한 식품으로는 익힌 닭고기, 연어, 호박, 당근 등이 있습니다.'
   };
 
-  // 키워드 매칭 시도
   for (const [keyword, response] of Object.entries(keywordResponses)) {
     if (lowerMessage.includes(keyword)) {
       return response;
     }
   }
 
-  // 매칭되는 키워드가 없는 경우 기본 응답
-  return `🐱 "${message}"에 대해 분석 중입니다.\n\n현재 해당 물질에 대한 정보가 독성 데이터베이스에 등록되어 있지 않습니다. 더 정확한 정보를 위해 수의사와 상담하시는 것을 권장합니다.\n\n궁금한 식물이나 식품이 있다면 이름을 입력해주세요!`;
+  return `🐱 "${message}"에 대해 분석 중입니다.\n\n현재 해당 물질에 대한 정보가 데이터베이스에 등록되어 있지 않습니다. 더 정확한 정보를 위해 수의사와 상담하시는 것을 권장합니다.\n\n궁금한 식물이나 식품이 있다면 이름을 입력해주세요!`;
 };
 
 module.exports = { askChat };

@@ -102,8 +102,8 @@ alwaysApply: true
 | Framework | Node.js + Express.js |
 | File Upload | Multer |
 | Database | MongoDB + Mongoose |
-| AI/Vision | Google Cloud Vision API (예정) |
-| LLM | OpenAI API (예정) |
+| AI/Vision | Google Cloud Vision API (✅ 연동 완료) |
+| LLM | OpenAI API gpt-4o-mini (✅ 연동 완료) |
 
 ---
 
@@ -115,9 +115,12 @@ catpoison/
 ├── backend/
 │   ├── config/db.js        # MongoDB 연결 설정
 │   ├── controllers/
-│   │   ├── scanController.js    # 이미지 스캔 로직 (현재 Mock)
-│   │   ├── chatController.js    # 챗봇 로직 (키워드 매칭 + DB)
+│   │   ├── scanController.js    # 이미지 스캔 (Vision API + OpenAI + DB)
+│   │   ├── chatController.js    # 챗봇 (OpenAI + DB 검색)
 │   │   └── timelineController.js # 타임라인 CRUD
+│   ├── services/
+│   │   ├── visionService.js     # Google Cloud Vision API 호출 (라벨감지/OCR)
+│   │   └── openaiService.js     # OpenAI API 호출 (독성분석/성분분석/챗봇)
 │   ├── data/toxicitySeeds.js    # 독성 DB 시드 데이터 (21종)
 │   ├── middleware/upload.js     # Multer 파일 업로드
 │   ├── models/
@@ -159,8 +162,8 @@ catpoison/
 
 | Method | Endpoint | 설명 | 상태 |
 |--------|----------|------|------|
-| POST | `/api/scan/image` | 이미지 분석 (FormData: image + scanType) | ✅ Mock 구현 |
-| POST | `/api/chat/ask` | 텍스트 독성 질의 (JSON: message) | ✅ Mock 구현 |
+| POST | `/api/scan/image` | 이미지 분석 (FormData: image + scanType) | ✅ Vision+OpenAI 연동 (Mock 폴백) |
+| POST | `/api/chat/ask` | 텍스트 독성 질의 (JSON: message) | ✅ OpenAI 연동 (Mock 폴백) |
 | GET | `/api/timeline/:catId` | 타임라인 조회 | ✅ Mock 구현 |
 | POST | `/api/timeline` | 타임라인 기록 추가 | ✅ Mock 구현 |
 | GET | `/api/health` | 서버 상태 확인 | ✅ 구현 완료 |
@@ -209,18 +212,21 @@ catpoison/
 - 다양한 날짜에 걸친 Mock 데이터 확장
 - README.md 전면 업데이트
 
+#### Phase 4: AI API 실연동 (커밋: 이번 세션)
+- Google Cloud Vision API 연동 (visionService.js)
+  - detectLabels: 라벨 감지 + 웹 엔티티 (LABEL_DETECTION + WEB_DETECTION)
+  - extractText: OCR 텍스트 추출 (TEXT_DETECTION, ko+en 힌트)
+- OpenAI API 연동 (openaiService.js, gpt-4o-mini)
+  - analyzeToxicity: Vision 결과 + ToxicityDB → 교차 검증 독성 판단
+  - analyzeIngredients: OCR 텍스트 → 성분 파싱 + 유해 성분 검출
+  - generateChatResponse: 챗봇 응답 생성 (대화 기록 컨텍스트 유지)
+- scanController.js 전면 교체: Vision→DB→OpenAI 3단계 파이프라인
+- chatController.js 전면 교체: OpenAI + DB 검색 통합
+- 모든 API에 폴백 체인 구현 (API 실패 → DB 매칭 → Mock)
+
 ### 🔲 미완료 / 다음 단계
 
-1. **Google Cloud Vision API 연동** (사물 인식 + OCR)
-   - scanController.js의 Mock 로직을 실제 API 호출로 교체
-   - 필요: `GOOGLE_CLOUD_VISION_API_KEY`
-
-2. **OpenAI API 연동** (LLM 기반 독성 판단)
-   - chatController.js의 Mock 로직을 OpenAI 호출로 교체
-   - 추출된 텍스트 + ToxicityDB를 프롬프트에 결합하여 정확한 판단
-   - 필요: `OPENAI_API_KEY`
-
-3. **MongoDB Atlas 연동** (프로덕션 DB)
+1. **MongoDB Atlas 연동** (프로덕션 DB)
    - 현재 로컬 MongoDB 사용
    - 필요: `MONGODB_URI` (Atlas 연결 문자열)
 
@@ -299,6 +305,30 @@ git config user.email "syoon624@users.noreply.github.com"
 **다음 세션에서 이어할 사항:**
 - 명세서의 미완료 항목(섹션 7 참조) 중 사용자가 지시하는 항목부터 진행
 - API 키 필요 시 사용자에게 요청
+
+### 📝 세션 #2 — 2026-04-08 (Phase 4: AI API 실연동)
+
+**환경:** Windows 10 / PowerShell / Cursor  
+**작업 범위:** Phase 4 - Google Vision API + OpenAI API 실연동
+
+| 순서 | 작업 내용 | 커밋 메시지 | 커밋 해시 |
+|------|-----------|-------------|-----------|
+| 1 | 기억이식 파일에 AI 행동 지침(섹션 0) + 작업 로그(섹션 11) 추가 | `docs: 기억이식 파일에 AI 행동 지침 및 작업 로그 추가` | `bd8b657` |
+| 2 | backend/services/ 디렉토리 신설: visionService.js (Vision API 라벨감지+OCR), openaiService.js (독성분석+성분분석+챗봇) | (이번 커밋에 포함) | — |
+| 3 | scanController.js 전면 교체: Vision→DB→OpenAI 3단계 파이프라인 + Mock 폴백 체인 | (이번 커밋에 포함) | — |
+| 4 | chatController.js 전면 교체: OpenAI 챗봇 + DB 검색 통합 + 폴백 체인 | (이번 커밋에 포함) | — |
+
+**세션 요약:**
+- AI API 서비스 레이어를 별도 모듈로 분리 (services/visionService.js, services/openaiService.js)
+- 스캔 컨트롤러: Vision API(라벨감지/OCR) → ToxicityDB 대조 → OpenAI 교차검증 3단계 파이프라인
+- 챗봇 컨트롤러: DB 검색 → OpenAI 응답 생성 (대화 기록 컨텍스트 전달)
+- 모든 단계에 폴백 체인 구현 (API 키 없으면 Mock, OpenAI 실패하면 DB 매칭)
+- OpenAI 모델: gpt-4o-mini (비용 효율), temperature 0.2~0.5 (판단 정확성)
+
+**다음 세션에서 이어할 사항:**
+- 사용자가 API 키를 발급하면 .env에 설정 후 실제 테스트
+- MongoDB Atlas 연동 (Phase 5)
+- 사용자 인증 (JWT) 구현
 
 ---
 
