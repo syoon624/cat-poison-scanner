@@ -140,6 +140,7 @@ export default function ScannerPage() {
             type,
             content,
             riskLevel,
+            scanData: result.result,
           });
           if (tlResult.success) {
             addToStore(tlResult.entry);

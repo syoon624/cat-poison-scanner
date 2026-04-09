@@ -73,7 +73,7 @@ const getTimeline = async (req, res) => {
  */
 const addTimelineEntry = async (req, res) => {
   try {
-    const { catId, type, content, riskLevel, imageUrl, palatabilityRating } = req.body;
+    const { catId, type, content, riskLevel, imageUrl, palatabilityRating, scanData, memo } = req.body;
 
     if (!catId || !type || !content) {
       return res.status(400).json({
@@ -99,6 +99,8 @@ const addTimelineEntry = async (req, res) => {
       content,
       riskLevel: riskLevel || 'NONE',
       imageUrl: imageUrl || null,
+      scanData: scanData || null,
+      memo: memo || '',
       palatabilityRating: palatabilityRating || null,
       timestamp: new Date()
     });
@@ -132,10 +134,11 @@ const updateTimelineEntry = async (req, res) => {
       });
     }
 
-    const { content, riskLevel, type } = req.body;
+    const { content, riskLevel, type, memo } = req.body;
     if (content !== undefined) log.content = content;
     if (riskLevel !== undefined) log.riskLevel = riskLevel;
     if (type !== undefined) log.type = type.toUpperCase();
+    if (memo !== undefined) log.memo = memo;
 
     await log.save();
 

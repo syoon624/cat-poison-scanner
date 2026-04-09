@@ -1,0 +1,273 @@
+/* ============================================
+ * TimelineDetailModal 스타일
+ * ============================================ */
+
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  padding: 0;
+}
+
+.detail-modal {
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* ─── 헤더 ─── */
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.detail-type {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.detail-risk {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.detail-time {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0 0 14px;
+}
+
+/* ─── 요약 ─── */
+.detail-summary {
+  background: #F9FAFB;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.detail-summary p {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1A1A2E;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ─── 섹션 공통 ─── */
+.detail-section {
+  margin-bottom: 18px;
+}
+
+.detail-section h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+/* ─── 스캔 정보 그리드 ─── */
+.scan-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.scan-info-item {
+  background: #F9FAFB;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.scan-label {
+  display: block;
+  font-size: 11px;
+  color: #9CA3AF;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.scan-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+
+.scan-details-box {
+  background: #F9FAFB;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.scan-details-box p {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ─── 증상 태그 ─── */
+.scan-symptoms, .scan-advice {
+  margin-top: 10px;
+}
+
+.scan-advice p {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+.symptom-tags, .safe-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.symptom-tag {
+  padding: 3px 10px;
+  background: #FEF2F2;
+  color: #DC2626;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.safe-tag {
+  padding: 3px 10px;
+  background: #ECFDF5;
+  color: #059669;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ─── OCR 텍스트 ─── */
+.ocr-text-box {
+  margin-bottom: 12px;
+}
+
+.ocr-text {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+  font-family: inherit;
+  margin: 6px 0 0;
+}
+
+/* ─── 유해 성분 목록 ─── */
+.hazard-list {
+  margin-bottom: 12px;
+}
+
+.hazard-item {
+  background: #FFF;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.hazard-item strong {
+  font-size: 14px;
+  color: #1A1A2E;
+}
+
+.hazard-item p {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 4px 0 6px;
+  line-height: 1.4;
+}
+
+/* ─── 안전 성분 ─── */
+.safe-list {
+  margin-top: 10px;
+}
+
+/* ─── 메모 ─── */
+.memo-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1A1A2E;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+  min-height: 70px;
+}
+
+.memo-input:focus {
+  outline: none;
+  border-color: #6C63FF;
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
+}
+
+.memo-save-btn {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: #6C63FF;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  float: right;
+}
+
+.memo-save-btn:disabled {
+  background: #B4B0E8;
+  cursor: not-allowed;
+}
+
+/* ─── 닫기 ─── */
+.detail-close-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #F5F5F7;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A2E;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.detail-close-btn:active {
+  background: #E5E7EB;
+}

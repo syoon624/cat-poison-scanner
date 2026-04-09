@@ -64,6 +64,15 @@
   margin-bottom: 12px;
   margin-left: 4px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: background 0.15s;
+}
+
+.content-card.clickable {
+  cursor: pointer;
+}
+
+.content-card.clickable:active {
+  background: #F9FAFB;
 }
 
 .card-header {

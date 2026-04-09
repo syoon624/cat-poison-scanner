@@ -12,12 +12,14 @@ import { getTimeline, addTimelineEntry, deleteTimelineEntry } from '../services/
 import useStore from '../store/useStore';
 import TimelineItem from '../components/TimelineItem';
 import TimelineDateGroup from '../components/TimelineDateGroup';
+import TimelineDetailModal from '../components/TimelineDetailModal';
 import './TimelinePage.css';
 
 export default function TimelinePage() {
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEntry, setNewEntry] = useState({ type: 'SYMPTOM', content: '', riskLevel: 'NONE' });
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const {
     timelineData, setTimelineData,
@@ -154,6 +156,7 @@ export default function TimelinePage() {
               items={group.items}
               isToday={group.isToday}
               onDelete={handleDeleteEntry}
+              onSelect={setSelectedItem}
             />
           ))
         )}
@@ -187,6 +190,17 @@ export default function TimelinePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedItem && (
+        <TimelineDetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onUpdate={(updated) => {
+            setTimelineData(timelineData.map(i => i._id === updated._id ? { ...i, ...updated } : i));
+            setSelectedItem(null);
+          }}
+        />
       )}
     </div>
   );

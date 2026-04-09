@@ -8,7 +8,7 @@
 import { getRiskColor, getTypeColor } from '../styles/colors';
 import './TimelineItem.css';
 
-export default function TimelineItem({ item, isFirst, isLast, onDelete }) {
+export default function TimelineItem({ item, isFirst, isLast, onDelete, onSelect }) {
   const typeColor = getTypeColor(item.type);
   const riskColor = getRiskColor(item.riskLevel);
 
@@ -45,8 +45,9 @@ export default function TimelineItem({ item, isFirst, isLast, onDelete }) {
 
       {/* 내용 카드 */}
       <div
-        className="content-card"
+        className="content-card clickable"
         style={item.riskLevel !== 'NONE' ? { borderLeft: `3px solid ${riskColor.main}` } : {}}
+        onClick={() => onSelect && onSelect(item)}
       >
         <div className="card-header">
           <span className="type-label" style={{ color: typeColor }}>{getTypeLabel(item.type)}</span>

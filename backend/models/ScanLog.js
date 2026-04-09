@@ -67,8 +67,22 @@ const scanLogSchema = new mongoose.Schema({
     default: null
   },
   
+  // 스캔 상세 데이터 (JSON) — 스캔 결과 전체를 저장
+  // PLANT: { identifiedItem, riskLevel, confidence, details, symptoms, ... }
+  // INGREDIENT: { extractedText, overallRiskLevel, safeIngredients, detectedHazards, ... }
+  // CHAT/SYMPTOM/HOSPITAL: null
+  scanData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
+
+  // 사용자 메모 (상세 기록용)
+  memo: {
+    type: String,
+    default: ''
+  },
+
   // 기호성 별점 (1~5) - 사료/간식 급여 후 기록
-  // null이면 별점 미기록 상태
   palatabilityRating: {
     type: Number,
     min: 1,
