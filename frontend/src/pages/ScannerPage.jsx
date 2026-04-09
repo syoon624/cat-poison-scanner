@@ -9,6 +9,10 @@
  * 3. 캡처 버튼 누르면 스냅샷 (갤러리 저장 없음, canvas → blob)
  * 4. 스냅샷 이미지를 서버에 전송 → 분석 결과 모달
  * 5. 모달 닫으면 다시 카메라 프리뷰로 복귀
+ *
+ * ⚠️ video 요소는 항상 DOM에 존재해야 합니다 (조건부 렌더링 X).
+ *    React의 조건부 렌더링 + ref 타이밍 문제로,
+ *    video가 DOM에 없을 때 srcObject를 설정하면 카메라가 표시되지 않습니다.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -37,6 +41,18 @@ export default function ScannerPage() {
     };
   }, []);
 
+  /**
+   * cameraActive가 true로 바뀌면, video 요소에 스트림을 연결
+   * video는 항상 DOM에 있으므로 ref가 null일 일이 없음
+   */
+  useEffect(() => {
+    if (cameraActive && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.onloadedmetadata = () => setCameraReady(true);
+      videoRef.current.play().catch(() => {});
+    }
+  }, [cameraActive]);
+
   /** 카메라 시작 */
   const startCamera = useCallback(async () => {
     try {
@@ -44,12 +60,8 @@ export default function ScannerPage() {
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => setCameraReady(true);
-      }
-      setCameraActive(true);
       setCapturedImage(null);
+      setCameraActive(true);
     } catch (err) {
       console.error('카메라 접근 실패:', err);
       alert('카메라 접근 권한이 필요합니다.\n브라우저 설정에서 카메라를 허용해주세요.');
@@ -61,6 +73,9 @@ export default function ScannerPage() {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setCameraActive(false);
     setCameraReady(false);
@@ -79,7 +94,6 @@ export default function ScannerPage() {
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
 
-    // 카메라를 먼저 끄고 캡처 이미지 표시
     stopCamera();
 
     canvas.toBlob(async (blob) => {
@@ -151,30 +165,35 @@ export default function ScannerPage() {
     <div className="scanner-page">
       {/* ─── 카메라/이미지 프리뷰 영역 ─── */}
       <div className="camera-area">
-        {/* 카메라 활성: 실시간 비디오 프리뷰 */}
+        {/*
+          video 요소는 항상 DOM에 존재.
+          cameraActive가 false일 때는 CSS로 숨김 처리.
+          이렇게 해야 ref 타이밍 문제 없이 srcObject 설정 가능.
+        */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="camera-video"
+          style={{ display: cameraActive ? 'block' : 'none' }}
+        />
+
+        {/* 카메라 활성: 스캔 가이드 오버레이 */}
         {cameraActive && (
-          <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="camera-video"
-            />
-            <div className="scan-overlay">
-              <div className="scan-frame">
-                <div className="corner top-left" />
-                <div className="corner top-right" />
-                <div className="corner bottom-left" />
-                <div className="corner bottom-right" />
-              </div>
-              <p className="guide-text">
-                {scanType === 'object'
-                  ? '🌿 식물/사물을 프레임 안에 맞춰주세요'
-                  : '📋 성분표를 프레임 안에 맞춰주세요'}
-              </p>
+          <div className="scan-overlay">
+            <div className="scan-frame">
+              <div className="corner top-left" />
+              <div className="corner top-right" />
+              <div className="corner bottom-left" />
+              <div className="corner bottom-right" />
             </div>
-          </>
+            <p className="guide-text">
+              {scanType === 'object'
+                ? '🌿 식물/사물을 프레임 안에 맞춰주세요'
+                : '📋 성분표를 프레임 안에 맞춰주세요'}
+            </p>
+          </div>
         )}
 
         {/* 캡처된 이미지 (분석 중일 때 표시) */}
@@ -221,7 +240,6 @@ export default function ScannerPage() {
           </label>
 
           {cameraActive ? (
-            /* 카메라 켜진 상태: 촬영 버튼 */
             <button
               className="capture-btn capturing"
               onClick={captureAndAnalyze}
@@ -230,7 +248,6 @@ export default function ScannerPage() {
               {isScanning ? <div className="spinner" /> : <div className="capture-inner" />}
             </button>
           ) : (
-            /* 카메라 꺼진 상태: 카메라 시작 버튼 */
             <button className="capture-btn" onClick={startCamera} disabled={isScanning}>
               {isScanning ? <div className="spinner" /> : <span className="camera-icon">📷</span>}
             </button>
