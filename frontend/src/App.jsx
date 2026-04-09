@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import useStore from './store/useStore';
+import { getCats } from './services/api';
 import LoginPage from './pages/LoginPage';
 import ScannerPage from './pages/ScannerPage';
 import ChatPage from './pages/ChatPage';
@@ -21,6 +22,14 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 function AuthenticatedApp() {
   const logout = useStore((s) => s.logout);
+  const setCats = useStore((s) => s.setCats);
+
+  // 로그인 후 고양이 목록 자동 로드
+  useEffect(() => {
+    getCats()
+      .then((res) => { if (res.success) setCats(res.cats); })
+      .catch((err) => console.warn('고양이 목록 로드 실패:', err.message));
+  }, [setCats]);
 
   // 401 토큰 만료 이벤트 수신 → 자동 로그아웃
   useEffect(() => {
