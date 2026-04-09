@@ -5,9 +5,11 @@
  * 반려묘 안전/건강 복합 관리 앱의 Express 서버입니다.
  * 
  * 주요 기능:
+ * - 인증 API (Google OAuth 소셜 로그인)
  * - 이미지 스캔 API (사물/식물 인식, OCR 성분표 분석)
  * - AI 챗봇 API (독성 물질 질의응답)
  * - 타임라인 API (건강 기록 관리)
+ * - 고양이 프로필 API (CRUD)
  */
 
 const express = require('express');
@@ -44,6 +46,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // API 라우트 등록
 // ============================================
 
+// 인증 관련 API (Google OAuth, 계정 관리)
+app.use('/api/auth', require('./routes/auth'));
+
 // 스캔 관련 API (이미지 분석, OCR)
 app.use('/api/scan', require('./routes/scan'));
 
@@ -52,6 +57,9 @@ app.use('/api/chat', require('./routes/chat'));
 
 // 타임라인 관련 API (건강 기록 관리)
 app.use('/api/timeline', require('./routes/timeline'));
+
+// 고양이 프로필 관련 API (CRUD)
+app.use('/api/cats', require('./routes/cats'));
 
 // ============================================
 // 헬스 체크 엔드포인트

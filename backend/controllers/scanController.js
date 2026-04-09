@@ -15,7 +15,7 @@
  *    - OpenAI로 추출된 성분을 파싱하고 유해 성분 검출
  * 
  * [Phase 4] 실제 API 연동 완료
- * - Vision API 키 미설정 시 Mock 데이터로 폴백
+ * - Vision API 실패 시 "인식할 수 없음" 반환 (Mock 데이터 사용하지 않음)
  * - OpenAI 키 미설정 시 ToxicityDB 매칭만으로 판단
  */
 
@@ -98,7 +98,7 @@ const scanImage = async (req, res) => {
  * 1. Vision API → 라벨 감지 (식물/사물 식별)
  * 2. ToxicityDB → 식별된 물질명으로 검색
  * 3. OpenAI → DB 결과 + Vision 라벨로 정밀 판단
- * 4. 폴백: Vision API 실패 → Mock / OpenAI 실패 → DB만 사용
+ * 4. 폴백: Vision API 실패 → "인식할 수 없음" / OpenAI 실패 → DB만 사용
  * 
  * @param {string} imagePath - 업로드된 이미지 파일 경로
  * @returns {Object} 분석 결과
@@ -109,8 +109,16 @@ const handleObjectScan = async (imagePath) => {
   try {
     visionResult = await detectLabels(imagePath);
   } catch (visionError) {
-    console.warn('⚠️ Vision API 호출 실패, Mock 결과 사용:', visionError.message);
-    return getMockObjectScanResult();
+    console.warn('⚠️ Vision API 호출 실패:', visionError.message);
+    return {
+      identifiedItem: '인식할 수 없음',
+      riskLevel: 'UNKNOWN',
+      confidence: 0,
+      details: '이미지를 분석할 수 없습니다. Vision API에 연결할 수 없거나 API 키가 설정되지 않았습니다. 잠시 후 다시 시도해주세요.',
+      symptoms: [],
+      category: 'UNKNOWN',
+      source: 'error-vision-unavailable'
+    };
   }
 
   // ─── Step 2: ToxicityDB에서 매칭 검색 ───
@@ -206,7 +214,7 @@ const handleObjectScan = async (imagePath) => {
  * 흐름:
  * 1. Vision API → 텍스트 추출 (OCR)
  * 2. OpenAI → 성분 파싱 + 유해 성분 판별
- * 3. 폴백: Vision 실패 → Mock / OpenAI 실패 → DB 키워드 매칭
+ * 3. 폴백: Vision 실패 → "인식할 수 없음" / OpenAI 실패 → DB 키워드 매칭
  * 
  * @param {string} imagePath - 업로드된 이미지 파일 경로
  * @returns {Object} 성분 분석 결과
@@ -217,8 +225,16 @@ const handleOCRScan = async (imagePath) => {
   try {
     ocrResult = await extractText(imagePath);
   } catch (visionError) {
-    console.warn('⚠️ Vision API OCR 실패, Mock 결과 사용:', visionError.message);
-    return getMockOCRScanResult();
+    console.warn('⚠️ Vision API OCR 실패:', visionError.message);
+    return {
+      extractedText: '',
+      overallRiskLevel: 'UNKNOWN',
+      totalIngredients: 0,
+      safeIngredients: [],
+      detectedHazards: [],
+      details: '성분표를 분석할 수 없습니다. Vision API에 연결할 수 없거나 API 키가 설정되지 않았습니다. 잠시 후 다시 시도해주세요.',
+      source: 'error-vision-unavailable'
+    };
   }
 
   // 텍스트가 추출되지 않은 경우
@@ -327,74 +343,6 @@ const fallbackOCRAnalysis = async (text, dbItems) => {
       ? `${detectedHazards.length}개의 유해 성분이 검출되었습니다. (DB 키워드 매칭)`
       : '유해 성분이 검출되지 않았습니다.',
     source: 'vision-ocr+db-fallback'
-  };
-};
-
-// ============================================
-// Mock 폴백 함수 (API 키 미설정 시 사용)
-// ============================================
-
-/**
- * 사물/식물 스캔 Mock 결과 (Vision API 키 없을 때)
- */
-const getMockObjectScanResult = () => {
-  const mockScenarios = [
-    {
-      identifiedItem: 'Lily (백합)',
-      riskLevel: 'TOXIC',
-      confidence: 0.92,
-      details: '백합은 고양이에게 매우 위험한 식물입니다. 꽃가루, 잎, 줄기 모두 독성이 있으며, 소량 섭취만으로도 급성 신부전을 유발할 수 있습니다.',
-      symptoms: ['구토', '식욕 부진', '무기력', '신부전', '사망 가능'],
-      category: 'PLANT',
-      source: 'mock'
-    },
-    {
-      identifiedItem: 'Spider Plant (접란)',
-      riskLevel: 'SAFE',
-      confidence: 0.88,
-      details: '접란(Spider Plant)은 고양이에게 안전한 식물입니다.',
-      symptoms: [],
-      category: 'PLANT',
-      source: 'mock'
-    },
-    {
-      identifiedItem: 'Aloe Vera (알로에)',
-      riskLevel: 'WARNING',
-      confidence: 0.85,
-      details: '알로에는 고양이가 섭취할 경우 경미한 위장 장애를 일으킬 수 있습니다.',
-      symptoms: ['구토', '설사', '무기력'],
-      category: 'PLANT',
-      source: 'mock'
-    }
-  ];
-  return mockScenarios[Math.floor(Math.random() * mockScenarios.length)];
-};
-
-/**
- * 성분표 OCR Mock 결과 (Vision API 키 없을 때)
- */
-const getMockOCRScanResult = () => {
-  return {
-    extractedText: '닭고기, 현미, 연어유, 타우린, 비타민E, 양파 가루, 자일리톨',
-    overallRiskLevel: 'TOXIC',
-    totalIngredients: 7,
-    safeIngredients: ['닭고기', '현미', '연어유', '타우린', '비타민E'],
-    detectedHazards: [
-      {
-        ingredient: '양파 가루',
-        riskLevel: 'TOXIC',
-        details: '양파는 고양이의 적혈구를 파괴하여 빈혈을 유발합니다.',
-        symptoms: ['빈혈', '무기력', '식욕 부진', '황달']
-      },
-      {
-        ingredient: '자일리톨',
-        riskLevel: 'TOXIC',
-        details: '자일리톨은 고양이에게 저혈당과 간 손상을 유발합니다.',
-        symptoms: ['저혈당', '구토', '간부전', '발작']
-      }
-    ],
-    details: '2개의 유해 성분이 검출되었습니다. (Mock 데이터)',
-    source: 'mock'
   };
 };
 

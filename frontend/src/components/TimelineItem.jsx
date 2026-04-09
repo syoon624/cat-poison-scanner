@@ -8,7 +8,7 @@
 import { getRiskColor, getTypeColor } from '../styles/colors';
 import './TimelineItem.css';
 
-export default function TimelineItem({ item, isFirst, isLast }) {
+export default function TimelineItem({ item, isFirst, isLast, onDelete }) {
   const typeColor = getTypeColor(item.type);
   const riskColor = getRiskColor(item.riskLevel);
 
@@ -58,6 +58,12 @@ export default function TimelineItem({ item, isFirst, isLast }) {
         </div>
         <p className="content-text">{item.content}</p>
         {renderStars(item.palatabilityRating)}
+        {onDelete && (
+          <button
+            className="tl-delete-btn"
+            onClick={(e) => { e.stopPropagation(); onDelete(item._id); }}
+          >삭제</button>
+        )}
       </div>
     </div>
   );

@@ -2,12 +2,13 @@
  * ============================================
  * TimelinePage - 타임라인 건강 기록 페이지 (PWA 웹 버전)
  * ============================================
- * React Native FlatList → HTML div + map으로 변환
- * Modal → CSS 기반 모달로 변환
+ * 인증된 사용자의 고양이별 타임라인을 표시합니다.
+ * Mock 데이터 없이 실제 DB 데이터만 사용.
+ * 기록 추가, 수정, 삭제 기능 포함.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getTimeline, addTimelineEntry } from '../services/api';
+import { getTimeline, addTimelineEntry, deleteTimelineEntry } from '../services/api';
 import useStore from '../store/useStore';
 import TimelineItem from '../components/TimelineItem';
 import TimelineDateGroup from '../components/TimelineDateGroup';
@@ -25,31 +26,50 @@ export default function TimelinePage() {
     selectedCat,
   } = useStore();
 
-  useEffect(() => { loadTimeline(); }, []);
-
-  const loadTimeline = async () => {
+  const loadTimeline = useCallback(async () => {
+    if (!selectedCat?._id) return;
     setTimelineLoading(true);
     try {
       const response = await getTimeline(selectedCat._id);
-      if (response.success) setTimelineData(response.timeline);
-    } catch {
-      setTimelineData(getMockTimeline());
+      if (response.success) {
+        setTimelineData(response.timeline);
+      }
+    } catch (err) {
+      console.error('타임라인 로드 실패:', err);
+      setTimelineData([]);
     } finally {
       setTimelineLoading(false);
     }
-  };
+  }, [selectedCat?._id, setTimelineData, setTimelineLoading]);
+
+  useEffect(() => { loadTimeline(); }, [loadTimeline]);
 
   const handleAddEntry = async () => {
     if (!newEntry.content.trim()) { alert('내용을 입력해주세요.'); return; }
+    if (!selectedCat?._id) { alert('먼저 고양이를 등록해주세요.'); return; }
+
     try {
-      await addTimelineEntry({ catId: selectedCat._id, ...newEntry });
-    } catch (e) { console.log('서버 저장 실패, 로컬 추가:', e.message); }
-    addToStore({
-      _id: 'local_' + Date.now(), catId: selectedCat._id,
-      ...newEntry, timestamp: new Date().toISOString(),
-    });
+      const result = await addTimelineEntry({ catId: selectedCat._id, ...newEntry });
+      if (result.success) {
+        addToStore(result.entry);
+      }
+    } catch (e) {
+      console.error('타임라인 저장 실패:', e.message);
+      alert('저장에 실패했습니다. 다시 시도해주세요.');
+    }
     setShowAddModal(false);
     setNewEntry({ type: 'SYMPTOM', content: '', riskLevel: 'NONE' });
+  };
+
+  const handleDeleteEntry = async (entryId) => {
+    if (!window.confirm('이 기록을 삭제할까요?')) return;
+    try {
+      await deleteTimelineEntry(entryId);
+      setTimelineData(timelineData.filter(item => item._id !== entryId));
+    } catch (err) {
+      console.error('기록 삭제 실패:', err);
+      alert('삭제에 실패했습니다.');
+    }
   };
 
   const filteredData = activeFilter === 'ALL'
@@ -72,21 +92,6 @@ export default function TimelinePage() {
       }));
   }, [filteredData]);
 
-  const getMockTimeline = () => {
-    const now = new Date();
-    const DAY = 86400000;
-    return [
-      { _id: 'mock_1', type: 'PLANT', content: '백합 (Lily) - 거실에서 발견', riskLevel: 'TOXIC', timestamp: new Date(now - 6*3600000).toISOString() },
-      { _id: 'mock_2', type: 'SYMPTOM', content: '구토 증상 발견 - 2회', riskLevel: 'NONE', timestamp: new Date(now - 4.5*3600000).toISOString() },
-      { _id: 'mock_3', type: 'HOSPITAL', content: '동물병원 방문 - 수액 처치 완료', riskLevel: 'NONE', timestamp: new Date(now - 3*3600000).toISOString() },
-      { _id: 'mock_4', type: 'INGREDIENT', content: '오리젠 캣&키튼 사료 성분 스캔 - 안전', riskLevel: 'SAFE', palatabilityRating: 4, timestamp: new Date(now - DAY - 2*3600000).toISOString() },
-      { _id: 'mock_5', type: 'CHAT', content: '"참치캔 급여해도 될까요?" 질의', riskLevel: 'WARNING', timestamp: new Date(now - DAY - 5*3600000).toISOString() },
-      { _id: 'mock_6', type: 'INGREDIENT', content: '츄르 참치맛 성분표 스캔 - 안전', riskLevel: 'SAFE', palatabilityRating: 5, timestamp: new Date(now - DAY - 8*3600000).toISOString() },
-      { _id: 'mock_7', type: 'PLANT', content: '접란 (Spider Plant) - 베란다에서 스캔', riskLevel: 'SAFE', timestamp: new Date(now - 3*DAY - 4*3600000).toISOString() },
-      { _id: 'mock_8', type: 'SYMPTOM', content: '식욕 정상, 활동량 양호', riskLevel: 'NONE', timestamp: new Date(now - 3*DAY - 10*3600000).toISOString() },
-    ];
-  };
-
   const filterOptions = [
     { key: 'ALL', label: '전체', icon: '📋' },
     { key: 'PLANT', label: '식물', icon: '🌿' },
@@ -105,16 +110,14 @@ export default function TimelinePage() {
 
   return (
     <div className="timeline-page">
-      {/* 헤더 */}
       <div className="tl-header">
         <div>
-          <h2>📅 {selectedCat.name}의 타임라인</h2>
+          <h2>📅 {selectedCat?.name || '고양이'}의 타임라인</h2>
           <p>{new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}</p>
         </div>
         <button className="add-btn" onClick={() => setShowAddModal(true)}>+ 기록</button>
       </div>
 
-      {/* 필터 바 */}
       <div className="filter-bar">
         {filterOptions.map((f) => (
           <button
@@ -125,9 +128,19 @@ export default function TimelinePage() {
         ))}
       </div>
 
-      {/* 타임라인 목록 */}
       <div className="tl-body">
-        {groupedData.length === 0 ? (
+        {isTimelineLoading ? (
+          <div className="tl-empty">
+            <div className="tl-spinner" />
+            <p>기록을 불러오는 중...</p>
+          </div>
+        ) : !selectedCat ? (
+          <div className="tl-empty">
+            <span>🐱</span>
+            <p>먼저 고양이를 등록해주세요</p>
+            <small>설정 탭에서 고양이를 추가할 수 있습니다</small>
+          </div>
+        ) : groupedData.length === 0 ? (
           <div className="tl-empty">
             <span>📝</span>
             <p>기록이 없습니다</p>
@@ -135,12 +148,17 @@ export default function TimelinePage() {
           </div>
         ) : (
           groupedData.map((group) => (
-            <TimelineDateGroup key={group.date} date={group.date} items={group.items} isToday={group.isToday} />
+            <TimelineDateGroup
+              key={group.date}
+              date={group.date}
+              items={group.items}
+              isToday={group.isToday}
+              onDelete={handleDeleteEntry}
+            />
           ))
         )}
       </div>
 
-      {/* 기록 추가 모달 */}
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>

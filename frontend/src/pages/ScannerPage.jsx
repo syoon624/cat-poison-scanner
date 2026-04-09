@@ -16,7 +16,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { scanImage } from '../services/api';
+import { scanImage, addTimelineEntry } from '../services/api';
 import useStore from '../store/useStore';
 import ScanResultCard from '../components/ScanResultCard';
 import './ScannerPage.css';
@@ -27,10 +27,11 @@ export default function ScannerPage() {
   const [showResult, setShowResult] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [savedToTimeline, setSavedToTimeline] = useState(false);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  const { scanResult, setScanResult, isScanning, setIsScanning, clearScanResult } = useStore();
+  const { scanResult, setScanResult, isScanning, setIsScanning, clearScanResult, selectedCat, addTimelineEntry: addToStore } = useStore();
 
   // 페이지 떠날 때 카메라 정리
   useEffect(() => {
@@ -114,7 +115,7 @@ export default function ScannerPage() {
     analyzeImage(file);
   };
 
-  /** 서버에 이미지 분석 요청 (실패 시 Mock) */
+  /** 서버에 이미지 분석 요청 */
   const analyzeImage = async (imageFile) => {
     setIsScanning(true);
     clearScanResult();
@@ -123,33 +124,54 @@ export default function ScannerPage() {
       setScanResult(result);
       setShowResult(true);
     } catch (error) {
-      console.log('서버 연결 실패, Mock 결과 사용:', error.message);
-      const mockResult = scanType === 'object'
-        ? {
-            success: true, scanType: 'object',
-            result: {
-              identifiedItem: '백합 (Lily)', riskLevel: 'TOXIC', confidence: 0.92,
-              details: '백합은 고양이에게 매우 위험한 식물입니다. 소량 섭취만으로도 급성 신부전을 유발할 수 있습니다.',
-              symptoms: ['구토', '식욕 부진', '무기력', '신부전'], category: 'PLANT',
-            },
-            disclaimer: '⚠️ 본 결과는 참고용이며, 최종 판단 및 응급 상황은 수의사와 상담하십시오.',
-          }
-        : {
-            success: true, scanType: 'ocr',
-            result: {
-              extractedText: '닭고기, 현미, 연어유, 타우린, 양파 가루', overallRiskLevel: 'TOXIC',
-              safeIngredients: ['닭고기', '현미', '연어유', '타우린'],
-              detectedHazards: [{
-                ingredient: '양파 가루', riskLevel: 'TOXIC',
-                details: '양파는 고양이의 적혈구를 파괴합니다.', symptoms: ['빈혈', '무기력'],
-              }],
-            },
-            disclaimer: '⚠️ 본 결과는 참고용이며, 최종 판단 및 응급 상황은 수의사와 상담하십시오.',
-          };
-      setScanResult(mockResult);
+      console.error('서버 연결 실패:', error.message);
+      const errorResult = {
+        success: false,
+        scanType,
+        result: {
+          identifiedItem: '인식할 수 없음',
+          riskLevel: 'UNKNOWN',
+          confidence: 0,
+          details: '서버에 연결할 수 없습니다. 네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.',
+          symptoms: [],
+          category: 'UNKNOWN',
+        },
+        disclaimer: '⚠️ 본 결과는 참고용이며, 최종 판단 및 응급 상황은 수의사와 상담하십시오.',
+      };
+      setScanResult(errorResult);
       setShowResult(true);
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  /** 스캔 결과를 타임라인에 저장 */
+  const saveToTimeline = async () => {
+    if (!selectedCat?._id || !scanResult?.result) return;
+
+    const data = scanResult.result;
+    const isOCR = scanResult.scanType === 'ocr';
+    const type = isOCR ? 'INGREDIENT' : 'PLANT';
+    const content = isOCR
+      ? `성분표 스캔 - ${data.overallRiskLevel === 'TOXIC' ? '위험 성분 검출' : data.overallRiskLevel === 'WARNING' ? '주의 성분 검출' : '안전'}`
+      : `${data.identifiedItem || '인식할 수 없음'} 스캔`;
+    const riskLevel = isOCR ? (data.overallRiskLevel || 'NONE') : (data.riskLevel || 'NONE');
+
+    try {
+      const result = await addTimelineEntry({
+        catId: selectedCat._id,
+        type,
+        content,
+        riskLevel,
+        imageUrl: scanResult.imageUrl || null,
+      });
+      if (result.success) {
+        addToStore(result.entry);
+        setSavedToTimeline(true);
+      }
+    } catch (err) {
+      console.error('타임라인 저장 실패:', err);
+      alert('타임라인 저장에 실패했습니다.');
     }
   };
 
@@ -158,6 +180,7 @@ export default function ScannerPage() {
     setShowResult(false);
     setCapturedImage(null);
     clearScanResult();
+    setSavedToTimeline(false);
     startCamera();
   };
 
@@ -255,7 +278,7 @@ export default function ScannerPage() {
 
           <div className="side-btn">
             <span>🐱</span>
-            <span className="side-label">나비</span>
+            <span className="side-label">{selectedCat?.name || '고양이'}</span>
           </div>
         </div>
 
@@ -270,7 +293,18 @@ export default function ScannerPage() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             {capturedImage && <img src={capturedImage} alt="분석 이미지" className="preview-image" />}
             <ScanResultCard result={scanResult} />
-            <button className="close-btn" onClick={closeResult}>닫기</button>
+            <div className="result-actions">
+              {scanResult.result?.riskLevel !== 'UNKNOWN' && selectedCat && (
+                <button
+                  className={`save-timeline-btn ${savedToTimeline ? 'saved' : ''}`}
+                  onClick={saveToTimeline}
+                  disabled={savedToTimeline}
+                >
+                  {savedToTimeline ? '✅ 저장됨' : '📅 타임라인에 저장'}
+                </button>
+              )}
+              <button className="close-btn" onClick={closeResult}>닫기</button>
+            </div>
           </div>
         </div>
       )}

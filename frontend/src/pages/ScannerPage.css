@@ -280,6 +280,31 @@
   margin-bottom: 16px;
 }
 
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.save-timeline-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #6C63FF;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.save-timeline-btn.saved {
+  background: #E8F5E9;
+  color: #4CAF50;
+  cursor: default;
+}
+
 .close-btn {
   width: 100%;
   padding: 14px;
@@ -290,5 +315,4 @@
   font-weight: 600;
   color: #1A1A2E;
   cursor: pointer;
-  margin-top: 12px;
 }

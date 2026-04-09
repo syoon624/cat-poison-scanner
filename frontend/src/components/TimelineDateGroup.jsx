@@ -7,7 +7,7 @@
 import TimelineItem from './TimelineItem';
 import './TimelineDateGroup.css';
 
-export default function TimelineDateGroup({ date, items, isToday }) {
+export default function TimelineDateGroup({ date, items, isToday, onDelete }) {
   const formatDateHeader = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('ko-KR', {
       month: 'long', day: 'numeric', weekday: 'short',
@@ -23,7 +23,7 @@ export default function TimelineDateGroup({ date, items, isToday }) {
       </div>
       <div className="items-container">
         {items.map((item, idx) => (
-          <TimelineItem key={item._id} item={item} isFirst={idx === 0} isLast={idx === items.length - 1} />
+          <TimelineItem key={item._id} item={item} isFirst={idx === 0} isLast={idx === items.length - 1} onDelete={onDelete} />
         ))}
       </div>
     </div>

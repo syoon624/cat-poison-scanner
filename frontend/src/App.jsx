@@ -2,45 +2,75 @@
  * ============================================
  * App - 메인 라우팅 + 하단 탭 네비게이션 (PWA 웹 버전)
  * ============================================
- * React Navigation (네이티브) → React Router DOM으로 변환
- * 하단 탭 네비게이션을 CSS로 직접 구현합니다.
+ * Google OAuth Provider로 감싸고, 인증 상태에 따라
+ * 로그인 페이지 또는 메인 앱을 표시합니다.
  */
 
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import useStore from './store/useStore';
+import LoginPage from './pages/LoginPage';
 import ScannerPage from './pages/ScannerPage';
 import ChatPage from './pages/ChatPage';
 import TimelinePage from './pages/TimelinePage';
+import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
-export default function App() {
-  return (
-    <BrowserRouter>
-      <div className="app-shell">
-        {/* 메인 콘텐츠 영역 */}
-        <main className="app-content">
-          <Routes>
-            <Route path="/" element={<ScannerPage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/timeline" element={<TimelinePage />} />
-          </Routes>
-        </main>
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-        {/* 하단 탭 바 (iOS 탭 바 스타일) */}
-        <nav className="tab-bar">
-          <NavLink to="/" className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`} end>
-            <span className="tab-icon">📷</span>
-            <span className="tab-label">스캔</span>
-          </NavLink>
-          <NavLink to="/chat" className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`}>
-            <span className="tab-icon">💬</span>
-            <span className="tab-label">냥챗</span>
-          </NavLink>
-          <NavLink to="/timeline" className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`}>
-            <span className="tab-icon">📅</span>
-            <span className="tab-label">타임라인</span>
-          </NavLink>
-        </nav>
-      </div>
-    </BrowserRouter>
+function AuthenticatedApp() {
+  const logout = useStore((s) => s.logout);
+
+  // 401 토큰 만료 이벤트 수신 → 자동 로그아웃
+  useEffect(() => {
+    const handler = () => logout();
+    window.addEventListener('auth:expired', handler);
+    return () => window.removeEventListener('auth:expired', handler);
+  }, [logout]);
+
+  return (
+    <div className="app-shell">
+      <main className="app-content">
+        <Routes>
+          <Route path="/" element={<ScannerPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/timeline" element={<TimelinePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+
+      <nav className="tab-bar">
+        <NavLink to="/" className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`} end>
+          <span className="tab-icon">📷</span>
+          <span className="tab-label">스캔</span>
+        </NavLink>
+        <NavLink to="/chat" className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`}>
+          <span className="tab-icon">💬</span>
+          <span className="tab-label">냥챗</span>
+        </NavLink>
+        <NavLink to="/timeline" className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`}>
+          <span className="tab-icon">📅</span>
+          <span className="tab-label">타임라인</span>
+        </NavLink>
+        <NavLink to="/settings" className={({ isActive }) => `tab-item ${isActive ? 'active' : ''}`}>
+          <span className="tab-icon">⚙️</span>
+          <span className="tab-label">설정</span>
+        </NavLink>
+      </nav>
+    </div>
+  );
+}
+
+export default function App() {
+  const isAuthenticated = useStore((s) => s.isAuthenticated);
+
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <BrowserRouter>
+        {isAuthenticated ? <AuthenticatedApp /> : <LoginPage />}
+      </BrowserRouter>
+    </GoogleOAuthProvider>
   );
 }

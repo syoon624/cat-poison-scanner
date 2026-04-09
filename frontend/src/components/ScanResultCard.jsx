@@ -16,12 +16,19 @@ export default function ScanResultCard({ result }) {
 
   if (isObjectScan) {
     const rc = getRiskColor(data.riskLevel);
+    const riskLabel = {
+      TOXIC: '🚨 위험',
+      WARNING: '⚠️ 주의',
+      SAFE: '✅ 안전',
+      UNKNOWN: '❓ 인식 불가',
+    }[data.riskLevel] || '❓ 인식 불가';
+
     return (
       <div className="result-card" style={{ borderLeft: `4px solid ${rc.main}` }}>
         <div className="result-header">
           <h3>{data.identifiedItem}</h3>
           <span className="risk-badge" style={{ background: rc.light, color: rc.main }}>
-            {data.riskLevel === 'TOXIC' ? '🚨 위험' : data.riskLevel === 'WARNING' ? '⚠️ 주의' : '✅ 안전'}
+            {riskLabel}
           </span>
         </div>
         {data.confidence && (
@@ -51,7 +58,7 @@ export default function ScanResultCard({ result }) {
       <div className="result-header">
         <h3>📋 성분표 분석 결과</h3>
         <span className="risk-badge" style={{ background: overallRc.light, color: overallRc.main }}>
-          {data.overallRiskLevel === 'TOXIC' ? '🚨 위험' : data.overallRiskLevel === 'WARNING' ? '⚠️ 주의' : '✅ 안전'}
+          {{ TOXIC: '🚨 위험', WARNING: '⚠️ 주의', SAFE: '✅ 안전', UNKNOWN: '❓ 인식 불가' }[data.overallRiskLevel] || '❓ 인식 불가'}
         </span>
       </div>
 

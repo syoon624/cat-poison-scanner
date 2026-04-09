@@ -8,7 +8,7 @@ alwaysApply: true
 
 > **이 파일의 목적:** 다른 컴퓨터에서 git clone 후 AI(Cursor)가 이 파일을 읽으면,
 > 프로젝트의 전체 맥락·약속·진행 상황을 기억하고 이전과 동일하게 작업을 이어갈 수 있습니다.
-> **마지막 업데이트:** 2026-04-09
+> **마지막 업데이트:** 2026-04-09 (Phase 7: 인증 + 타임라인 + 스캐너 개선)
 
 ---
 
@@ -101,11 +101,12 @@ alwaysApply: true
 | 항목 | 기술 |
 |------|------|
 | Framework | React 18 + Vite 5 |
-| State | Zustand |
-| Routing | React Router DOM (하단 탭 네비게이션) |
+| State | Zustand (localStorage 연동 인증 유지) |
+| Routing | React Router DOM (하단 탭 네비게이션 4탭) |
+| Auth | @react-oauth/google (Google Identity Services) |
 | Camera | Web Camera API (navigator.mediaDevices.getUserMedia) |
 | Styling | 일반 CSS (CSS Modules 아님, 파일별 분리) |
-| Network | Axios |
+| Network | Axios (JWT 인터셉터, 401 자동 로그아웃) |
 | PWA | manifest.json + Service Worker |
 
 ### Front-End — 기존 네이티브 (frontend-native/, 보존됨)
@@ -122,6 +123,7 @@ alwaysApply: true
 | 항목 | 기술 |
 |------|------|
 | Framework | Node.js + Express.js |
+| Auth | Google OAuth (google-auth-library) + JWT (jsonwebtoken) |
 | File Upload | Multer |
 | Database | MongoDB + Mongoose |
 | AI/Vision | Google Cloud Vision API (✅ 연동 완료) |
@@ -137,17 +139,24 @@ catpoison/
 ├── backend/
 │   ├── config/db.js        # MongoDB 연결 설정
 │   ├── controllers/
+│   │   ├── authController.js    # ★ Google OAuth 로그인/계정 관리
+│   │   ├── catController.js     # ★ 고양이 프로필 CRUD
 │   │   ├── scanController.js    # 이미지 스캔 (Vision API + OpenAI + DB)
 │   │   ├── chatController.js    # 챗봇 (OpenAI + DB 검색)
-│   │   └── timelineController.js # 타임라인 CRUD
+│   │   └── timelineController.js # 타임라인 CRUD (인증 필수)
 │   ├── services/
 │   │   ├── visionService.js     # Google Cloud Vision API 호출
 │   │   └── openaiService.js     # OpenAI API 호출
 │   ├── data/toxicitySeeds.js    # 독성 DB 시드 데이터 (21종)
-│   ├── middleware/upload.js     # Multer 파일 업로드
+│   ├── middleware/
+│   │   ├── upload.js            # Multer 파일 업로드
+│   │   └── auth.js              # ★ JWT 인증 미들웨어
 │   ├── models/
-│   │   ├── User.js, Cat.js, ScanLog.js, ToxicityDB.js
+│   │   ├── User.js              # ★ Google OAuth 필드 추가
+│   │   ├── Cat.js, ScanLog.js, ToxicityDB.js
 │   ├── routes/
+│   │   ├── auth.js              # ★ 인증 라우트
+│   │   ├── cats.js              # ★ 고양이 CRUD 라우트
 │   │   ├── scan.js, chat.js, timeline.js
 │   ├── server.js           # Express 서버 진입점
 │   ├── package.json
@@ -159,16 +168,18 @@ catpoison/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ScanResultCard.jsx + .css
-│   │   │   ├── TimelineItem.jsx + .css
+│   │   │   ├── TimelineItem.jsx + .css  (삭제 버튼 추가)
 │   │   │   └── TimelineDateGroup.jsx + .css
 │   │   ├── pages/
-│   │   │   ├── ScannerPage.jsx + .css   # Web Camera API 스캔
-│   │   │   ├── ChatPage.jsx + .css      # AI 챗봇
-│   │   │   └── TimelinePage.jsx + .css  # 타임라인
-│   │   ├── services/api.js      # Axios API 통신
-│   │   ├── store/useStore.js    # Zustand 전역 상태
+│   │   │   ├── LoginPage.jsx + .css     # ★ Google 로그인
+│   │   │   ├── SettingsPage.jsx + .css  # ★ 프로필/고양이/계정 관리
+│   │   │   ├── ScannerPage.jsx + .css   # Web Camera API 스캔 + 타임라인 저장
+│   │   │   ├── ChatPage.jsx + .css      # AI 챗봇 + 타임라인 저장
+│   │   │   └── TimelinePage.jsx + .css  # 유저별 타임라인 (Mock 제거)
+│   │   ├── services/api.js      # Axios API 통신 (JWT 인터셉터)
+│   │   ├── store/useStore.js    # Zustand (인증+고양이+스캔+챗+타임라인)
 │   │   ├── styles/colors.js     # 컬러 팔레트
-│   │   ├── App.jsx + App.css    # 라우팅 + 하단 탭
+│   │   ├── App.jsx + App.css    # 라우팅 + 인증 분기 + 하단 4탭
 │   │   └── main.jsx             # Vite 진입점 + SW 등록
 │   ├── index.html           # PWA 메타태그 포함
 │   ├── vite.config.js
@@ -185,20 +196,29 @@ catpoison/
 
 ## 📌 5. API 엔드포인트
 
-| Method | Endpoint | 설명 | 상태 |
-|--------|----------|------|------|
-| POST | `/api/scan/image` | 이미지 분석 (FormData: image + scanType) | ✅ Vision+OpenAI 연동 (Mock 폴백) |
-| POST | `/api/chat/ask` | 텍스트 독성 질의 (JSON: message) | ✅ OpenAI 연동 (Mock 폴백) |
-| GET | `/api/timeline/:catId` | 타임라인 조회 | ✅ Mock 구현 |
-| POST | `/api/timeline` | 타임라인 기록 추가 | ✅ Mock 구현 |
-| GET | `/api/health` | 서버 상태 확인 | ✅ 구현 완료 |
+| Method | Endpoint | 설명 | 인증 | 상태 |
+|--------|----------|------|------|------|
+| POST | `/api/auth/google` | Google 소셜 로그인 (idToken→JWT) | - | ✅ |
+| GET | `/api/auth/me` | 현재 사용자 정보 | 필수 | ✅ |
+| DELETE | `/api/auth/account` | 계정 삭제 (관련 데이터 일괄 삭제) | 필수 | ✅ |
+| GET | `/api/cats` | 내 고양이 목록 | 필수 | ✅ |
+| POST | `/api/cats` | 고양이 등록 | 필수 | ✅ |
+| PUT | `/api/cats/:id` | 고양이 수정 | 필수 | ✅ |
+| DELETE | `/api/cats/:id` | 고양이 삭제 | 필수 | ✅ |
+| POST | `/api/scan/image` | 이미지 분석 (FormData) | 선택 | ✅ Vision+OpenAI (인식 불가 시 "인식할 수 없음") |
+| POST | `/api/chat/ask` | 텍스트 독성 질의 | 선택 | ✅ OpenAI 연동 |
+| GET | `/api/timeline/:catId` | 타임라인 조회 | 필수 | ✅ 유저별 실데이터 |
+| POST | `/api/timeline` | 타임라인 기록 추가 | 필수 | ✅ |
+| PUT | `/api/timeline/:id` | 타임라인 기록 수정 | 필수 | ✅ |
+| DELETE | `/api/timeline/:id` | 타임라인 기록 삭제 | 필수 | ✅ |
+| GET | `/api/health` | 서버 상태 확인 | - | ✅ |
 
 ---
 
 ## 📌 6. DB 스키마 요약
 
 ### Users
-`{ _id, email, passwordHash, createdAt }`
+`{ _id, email, googleId, displayName, profileImage, passwordHash(nullable), createdAt, updatedAt }`
 
 ### Cats
 `{ _id, userId(→User), name, birthDate, weight, preExistingConditions:[] }`
@@ -275,17 +295,32 @@ catpoison/
 - Zustand, Axios 그대로 포팅 (웹 환경 호환)
 - 빌드 성공 확인 (vite build)
 
+#### Phase 7: 인증 시스템 + 유저별 타임라인 + 스캐너 개선
+- 스캐너: Mock 데이터 완전 제거, Vision API 실패 시 "인식할 수 없음" 반환
+- Google OAuth 소셜 로그인 (google-auth-library + JWT)
+- JWT 인증 미들웨어 (필수/선택적 두 종류)
+- 사용자 프로필 조회, 계정 삭제 (관련 데이터 일괄 삭제)
+- 고양이 프로필 CRUD API + 첫 가입 시 기본 프로필 자동 생성
+- 타임라인: 유저별 실데이터 기반 (Mock 완전 제거), 수정/삭제 지원
+- 스캔 결과 → 타임라인 저장 버튼 (결과 모달에서)
+- 채팅 응답 → 타임라인 저장 버튼
+- 프론트엔드: LoginPage, SettingsPage, 하단 4탭(스캔/냥챗/타임라인/설정)
+- Zustand: 인증 상태 + localStorage 연동 + 고양이 프로필 관리
+- Axios 인터셉터: JWT 자동 첨부, 401 시 자동 로그아웃
+
 ### 🔲 미완료 / 다음 단계
 
-1. **PWA 프론트엔드 배포** (Netlify, Vercel, 또는 Render Static Site)
-   - `npm run build` → dist/ 폴더 배포
+1. **Google OAuth 클라이언트 ID 발급**
+   - Google Cloud Console에서 OAuth 2.0 클라이언트 ID 생성
+   - 백엔드: `GOOGLE_CLIENT_ID` 환경변수 설정
+   - 프론트엔드: `VITE_GOOGLE_CLIENT_ID` 환경변수 설정
+   - Render.com 환경변수에도 추가 필요
    
-2. **PWA 아이콘 제작** (icon-192.png, icon-512.png)
-   - 현재 placeholder 파일만 존재
+2. **JWT_SECRET 환경변수 설정**
+   - 프로덕션에서 강력한 시크릿 키 사용 필요
 
-3. **사용자 인증 시스템** (회원가입/로그인)
-   - JWT 또는 세션 기반 인증
-   - User 모델 활용
+3. **PWA 아이콘 제작** (icon-192.png, icon-512.png)
+   - 현재 placeholder 파일만 존재
 
 4. **이미지 클라우드 스토리지** (S3 또는 Firebase Storage)
    - 현재 로컬 uploads/ 폴더 사용
@@ -304,7 +339,9 @@ catpoison/
 | DB | MongoDB | 유연한 JSON 스키마, ScanLog 다형성 지원 |
 | 스캔 결과 피드백 | 3단계 컬러 (Safe/Warning/Toxic) | 직관적 UX, 명세서 요구사항 |
 | 타임라인 UI | 수직 트리 (border-left + 원형 노드) | 명세서의 CSS 트리구조 요구사항 준수 |
-| Mock 폴백 | 서버 미연결 시 프론트엔드 자체 Mock | 개발 편의성, 프론트/백 독립 테스트 |
+| Mock 폴백 | 제거됨 → "인식할 수 없음" 반환 | 사용자 요청: 정직한 응답 |
+| 인증 | Google OAuth + JWT | 소셜 로그인 간편성, 무료 |
+| 세션 관리 | JWT 7일 유효 + localStorage | PWA에서 쿠키 대신 토큰 사용 |
 | 법적 고지 | 모든 스캔 결과에 상시 노출 | 명세서 필수 요구사항 |
 
 ---
@@ -344,9 +381,11 @@ npm install
 
 | 변수 | 설명 | 비고 |
 |------|------|------|
-| `MONGODB_URI` | MongoDB Atlas 연결 문자열 | 비밀번호 특수문자 URL 인코딩 필수 (`!`→`%21`, `@`→`%40`, `#`→`%23`) |
+| `MONGODB_URI` | MongoDB Atlas 연결 문자열 | 비밀번호 특수문자 URL 인코딩 필수 |
 | `OPENAI_API_KEY` | OpenAI API 키 | `sk-proj-...` 형태 |
 | `GOOGLE_CLOUD_VISION_API_KEY` | Google Vision API 키 | `AIza...` 형태 |
+| `GOOGLE_CLIENT_ID` | Google OAuth 클라이언트 ID | ★ Phase 7 추가. Google Cloud Console에서 발급 |
+| `JWT_SECRET` | JWT 서명 비밀키 | ★ Phase 7 추가. 프로덕션에서 강력한 키 사용 |
 | `PORT` | 로컬 서버 포트 | 기본값 5000 |
 
 > **참고:** MongoDB Atlas에는 이미 시드 데이터(18종 독성 물질)가 삽입되어 있으므로
@@ -365,7 +404,13 @@ cd ../frontend
 npm install
 ```
 
-> 의존성: react, react-dom, react-router-dom, axios, zustand, vite
+> 의존성: react, react-dom, react-router-dom, axios, zustand, @react-oauth/google, vite
+
+**`.env` 파일 생성** (프론트엔드용):
+| 변수 | 설명 |
+|------|------|
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth 클라이언트 ID (백엔드와 동일한 값) |
+| `VITE_API_URL` | (선택) 백엔드 API URL. 프로덕션에서는 빈 값(같은 도메인) |
 
 **로컬 개발 서버 실행:**
 ```bash
@@ -570,6 +615,44 @@ git config user.email "syoon624@users.noreply.github.com"
 - PWA 아이콘 제작 (icon-192.png, icon-512.png)
 - 실제 기기에서 테스트 (카메라, 홈 화면 추가)
 - 사용자 인증 시스템 구현
+
+### 📝 세션 #5 — 2026-04-09 (Phase 7: 인증 시스템 + 유저별 타임라인 + 스캐너 개선)
+
+**환경:** Windows 10 / PowerShell / Cursor  
+**작업 범위:** Phase 7 - 스캐너 Mock 제거, Google OAuth 인증, 유저별 타임라인
+
+| 순서 | 작업 내용 |
+|------|-----------|
+| 1 | **스캐너 Mock 완전 제거**: scanController.js에서 getMockObjectScanResult/getMockOCRScanResult 삭제, Vision API 실패 시 "인식할 수 없음" 반환. ScannerPage.jsx 프론트엔드 Mock도 제거 |
+| 2 | **ScanResultCard UNKNOWN 지원**: 위험도 UNKNOWN 표시 (❓ 인식 불가) + getRiskColor 기본값(gray) 활용 |
+| 3 | **백엔드 인증 시스템**: google-auth-library + jsonwebtoken 설치, User 모델에 googleId/displayName/profileImage 추가, auth 미들웨어(필수/선택적), authController(Google 토큰 검증→JWT 발급, 계정 삭제), auth 라우트 |
+| 4 | **고양이 프로필 CRUD**: catController + cats 라우트 (모든 엔드포인트 authMiddleware 보호) |
+| 5 | **타임라인 개선**: Mock 완전 제거, userId 기반 조회, PUT/DELETE 추가, authMiddleware 적용 |
+| 6 | **프론트엔드 인증**: @react-oauth/google 설치, LoginPage(Google 로그인 UI), SettingsPage(프로필/고양이관리/로그아웃/계정삭제) |
+| 7 | **Zustand 확장**: 인증 상태(token/user/isAuthenticated) + localStorage 연동, 고양이 프로필(cats/selectedCat) 관리, login/logout 액션 |
+| 8 | **API 클라이언트**: Axios 인터셉터(JWT 자동 첨부, 401 자동 로그아웃), 인증/고양이/타임라인 수정삭제 API 함수 추가 |
+| 9 | **App.jsx**: GoogleOAuthProvider 래핑, 인증 분기(LoginPage vs AuthenticatedApp), 하단 4탭(스캔/냥챗/타임라인/설정) |
+| 10 | **스캔→타임라인 연동**: 결과 모달에 "타임라인에 저장" 버튼, 채팅 응답에 📅 저장 버튼 |
+| 11 | **TimelinePage Mock 제거**: 실 DB 데이터만 표시, 빈 상태/로딩 UI, 삭제 기능 |
+| 12 | **기억이식 파일 업데이트** |
+
+**세션 요약:**
+- 스캐너의 가짜 데이터(백합 등) 반환 문제 해결 → "인식할 수 없음" 정직한 응답
+- Google OAuth 소셜 로그인 시스템 전체 구현 (백엔드 토큰 검증 + JWT 발급 + 프론트엔드 Google 버튼)
+- 유저별 데이터 격리: 타임라인, 고양이 프로필 모두 인증된 사용자 기준 조회
+- 타임라인에 스캔/채팅 결과 수동 저장 기능 추가
+- 설정 페이지에서 고양이 추가/수정/삭제 + 계정 삭제(관련 데이터 일괄) 가능
+
+**배포 전 필요한 환경 변수:**
+- `GOOGLE_CLIENT_ID` (백엔드 .env + Render.com 환경변수)
+- `JWT_SECRET` (백엔드 .env + Render.com 환경변수)
+- `VITE_GOOGLE_CLIENT_ID` (프론트엔드 .env)
+
+**다음 세션에서 이어할 사항:**
+- Google Cloud Console에서 OAuth 클라이언트 ID 발급 (사용자 필요)
+- Render.com에 새 환경변수 추가 후 재배포
+- 실제 기기에서 Google 로그인 테스트
+- PWA 아이콘 제작
 
 ---
 

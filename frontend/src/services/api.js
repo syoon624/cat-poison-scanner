@@ -3,36 +3,97 @@
  * API 서비스 - 백엔드 통신 모듈 (PWA 웹 버전)
  * ============================================
  * Axios를 사용하여 PurrfectScan 백엔드 API와 통신합니다.
- * React Native 버전의 로직을 그대로 포팅했으며,
- * 웹 환경에 맞게 FormData 처리 방식만 변경되었습니다.
+ * JWT 토큰 자동 첨부 및 401 응답 시 자동 로그아웃 처리 포함.
  */
 
 import axios from 'axios';
 
-// 백엔드 서버 URL
-// 프로덕션: 같은 도메인에서 서빙되므로 빈 문자열 (상대 경로)
-// 개발: 로컬 백엔드 서버 (localhost:5000)
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
-/**
- * Axios 인스턴스
- * - timeout: 30초 (Render 무료 티어 콜드 스타트 대비)
- */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-/**
- * 이미지 분석 요청 (웹 버전)
- * File 객체를 FormData에 담아 서버로 전송
- * @param {File} imageFile - 이미지 파일 객체
- * @param {string} scanType - 'object' | 'ocr'
- * @returns {Promise<Object>} 스캔 분석 결과
- */
+// ─── 요청 인터셉터: JWT 토큰 자동 첨부 ───
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('purrfect_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ─── 응답 인터셉터: 401 시 자동 로그아웃 ───
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('purrfect_token');
+      localStorage.removeItem('purrfect_user');
+      // 로그인 페이지로 이동은 컴포넌트 레벨에서 처리
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ============================================
+// 인증 API
+// ============================================
+
+/** Google 소셜 로그인 */
+export const googleLogin = async (idToken) => {
+  const response = await apiClient.post('/api/auth/google', { idToken });
+  return response.data;
+};
+
+/** 현재 사용자 정보 조회 */
+export const getMe = async () => {
+  const response = await apiClient.get('/api/auth/me');
+  return response.data;
+};
+
+/** 계정 삭제 */
+export const deleteAccount = async () => {
+  const response = await apiClient.delete('/api/auth/account');
+  return response.data;
+};
+
+// ============================================
+// 고양이 프로필 API
+// ============================================
+
+/** 내 고양이 목록 조회 */
+export const getCats = async () => {
+  const response = await apiClient.get('/api/cats');
+  return response.data;
+};
+
+/** 고양이 등록 */
+export const createCat = async (catData) => {
+  const response = await apiClient.post('/api/cats', catData);
+  return response.data;
+};
+
+/** 고양이 정보 수정 */
+export const updateCat = async (catId, catData) => {
+  const response = await apiClient.put(`/api/cats/${catId}`, catData);
+  return response.data;
+};
+
+/** 고양이 삭제 */
+export const deleteCat = async (catId) => {
+  const response = await apiClient.delete(`/api/cats/${catId}`);
+  return response.data;
+};
+
+// ============================================
+// 스캔 API
+// ============================================
+
+/** 이미지 분석 요청 */
 export const scanImage = async (imageFile, scanType = 'object') => {
   const formData = new FormData();
   formData.append('image', imageFile, 'scan.jpg');
@@ -44,22 +105,21 @@ export const scanImage = async (imageFile, scanType = 'object') => {
   return response.data;
 };
 
-/**
- * 챗봇 질의 전송
- * @param {string} message - 사용자 질문
- * @returns {Promise<Object>} 챗봇 응답
- */
+// ============================================
+// 챗봇 API
+// ============================================
+
+/** 챗봇 질의 전송 */
 export const askChat = async (message) => {
   const response = await apiClient.post('/api/chat/ask', { message });
   return response.data;
 };
 
-/**
- * 타임라인 기록 조회
- * @param {string} catId - 고양이 ID
- * @param {Object} filters - 필터 옵션
- * @returns {Promise<Object>} 타임라인 데이터
- */
+// ============================================
+// 타임라인 API
+// ============================================
+
+/** 타임라인 기록 조회 */
 export const getTimeline = async (catId, filters = {}) => {
   const params = {};
   if (filters.startDate) params.startDate = filters.startDate;
@@ -70,20 +130,25 @@ export const getTimeline = async (catId, filters = {}) => {
   return response.data;
 };
 
-/**
- * 타임라인 새 기록 추가
- * @param {Object} entry - 타임라인 항목
- * @returns {Promise<Object>} 생성된 기록
- */
+/** 타임라인 기록 추가 */
 export const addTimelineEntry = async (entry) => {
   const response = await apiClient.post('/api/timeline', entry);
   return response.data;
 };
 
-/**
- * 서버 상태 확인
- * @returns {Promise<Object>} 서버 상태
- */
+/** 타임라인 기록 수정 */
+export const updateTimelineEntry = async (entryId, data) => {
+  const response = await apiClient.put(`/api/timeline/${entryId}`, data);
+  return response.data;
+};
+
+/** 타임라인 기록 삭제 */
+export const deleteTimelineEntry = async (entryId) => {
+  const response = await apiClient.delete(`/api/timeline/${entryId}`);
+  return response.data;
+};
+
+/** 서버 상태 확인 */
 export const checkHealth = async () => {
   const response = await apiClient.get('/api/health');
   return response.data;

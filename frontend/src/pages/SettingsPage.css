@@ -1,0 +1,299 @@
+/* ============================================
+ * SettingsPage 스타일
+ * ============================================ */
+
+.settings-page {
+  padding: 20px 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 100px;
+}
+
+.settings-section {
+  margin-bottom: 28px;
+}
+
+.settings-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+}
+
+/* ─── 프로필 카드 ─── */
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.profile-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-img-placeholder {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-info strong {
+  font-size: 16px;
+  color: #1a1a2e;
+}
+
+.profile-info span {
+  font-size: 13px;
+  color: #6B7280;
+}
+
+/* ─── 고양이 관리 ─── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.add-cat-btn {
+  padding: 6px 14px;
+  background: #6C63FF;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-cat-btn:active { transform: scale(0.96); }
+
+.empty-cats {
+  text-align: center;
+  padding: 24px;
+  background: #F9FAFB;
+  border-radius: 12px;
+  color: #6B7280;
+}
+
+.add-first-cat {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: #6C63FF;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  border: 2px solid transparent;
+}
+
+.cat-card.selected {
+  border-color: #6C63FF;
+  background: #F5F3FF;
+}
+
+.cat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.cat-info strong {
+  font-size: 15px;
+  color: #1a1a2e;
+}
+
+.cat-info span {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin-top: 2px;
+}
+
+.cat-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selected-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #EDE9FE;
+  color: #6C63FF;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.cat-edit-btn, .cat-delete-btn {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cat-edit-btn {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.cat-delete-btn {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+/* ─── 계정 버튼 ─── */
+.logout-btn {
+  width: 100%;
+  padding: 12px;
+  background: #F3F4F6;
+  color: #374151;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.delete-account-btn {
+  width: 100%;
+  padding: 12px;
+  background: #fff;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ─── 모달 (공통) ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-content.danger {
+  border: 2px solid #FECACA;
+}
+
+.modal-content h3 {
+  font-size: 18px;
+  margin: 0 0 16px 0;
+  color: #1a1a2e;
+}
+
+.modal-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin: 12px 0 4px;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: #6C63FF;
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.1);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-btn, .save-btn, .danger-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #F3F4F6;
+  color: #374151;
+}
+
+.save-btn {
+  background: #6C63FF;
+  color: #fff;
+}
+
+.danger-btn {
+  background: #DC2626;
+  color: #fff;
+}
+
+.danger-text {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.6;
+}

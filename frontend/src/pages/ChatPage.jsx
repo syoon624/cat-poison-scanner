@@ -8,7 +8,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { COLORS, getRiskColor } from '../styles/colors';
-import { askChat } from '../services/api';
+import { askChat, addTimelineEntry } from '../services/api';
 import useStore from '../store/useStore';
 import './ChatPage.css';
 
@@ -16,7 +16,7 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const chatEndRef = useRef(null);
 
-  const { chatHistory, addChatMessage, isChatLoading, setChatLoading } = useStore();
+  const { chatHistory, addChatMessage, isChatLoading, setChatLoading, selectedCat, addTimelineEntry: addToStore } = useStore();
 
   /** 새 메시지 시 자동 스크롤 */
   useEffect(() => {
@@ -69,6 +69,27 @@ export default function ChatPage() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  /** 채팅 응답을 타임라인에 저장 */
+  const saveChatToTimeline = async (chatItem) => {
+    if (!selectedCat?._id) return;
+    try {
+      const preview = chatItem.message.length > 60 ? chatItem.message.slice(0, 60) + '...' : chatItem.message;
+      const result = await addTimelineEntry({
+        catId: selectedCat._id,
+        type: 'CHAT',
+        content: `냥챗: ${preview}`,
+        riskLevel: 'NONE',
+      });
+      if (result.success) {
+        addToStore(result.entry);
+        alert('타임라인에 저장되었습니다.');
+      }
+    } catch (err) {
+      console.error('채팅 타임라인 저장 실패:', err);
+      alert('저장에 실패했습니다.');
     }
   };
 
@@ -127,9 +148,17 @@ export default function ChatPage() {
                     )}
 
                     {item.disclaimer && <p className="disclaimer-text">{item.disclaimer}</p>}
-                    <span className="timestamp">
-                      {new Date(item.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="msg-footer">
+                      <span className="timestamp">
+                        {new Date(item.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {!isUser && selectedCat && (
+                        <button
+                          className="chat-save-btn"
+                          onClick={() => saveChatToTimeline(item)}
+                        >📅</button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
