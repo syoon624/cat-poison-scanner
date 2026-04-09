@@ -1,0 +1,237 @@
+/* ============================================
+ * ScannerPage 스타일
+ * ============================================ */
+
+.scanner-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #000;
+}
+
+/* ─── 카메라/이미지 영역 ─── */
+.camera-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a2e;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.captured-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.camera-placeholder {
+  text-align: center;
+  color: #9CA3AF;
+}
+
+.placeholder-icon {
+  font-size: 60px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.camera-placeholder p {
+  font-size: 14px;
+}
+
+/* ─── 스캔 가이드 프레임 오버레이 ─── */
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.scan-frame {
+  width: 240px;
+  height: 240px;
+  position: relative;
+}
+
+.corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: #fff;
+}
+
+.corner.top-left { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; border-radius: 8px 0 0 0; }
+.corner.top-right { top: 0; right: 0; border-top: 3px solid; border-right: 3px solid; border-radius: 0 8px 0 0; }
+.corner.bottom-left { bottom: 0; left: 0; border-bottom: 3px solid; border-left: 3px solid; border-radius: 0 0 0 8px; }
+.corner.bottom-right { bottom: 0; right: 0; border-bottom: 3px solid; border-right: 3px solid; border-radius: 0 0 8px 0; }
+
+.guide-text {
+  color: #fff;
+  font-size: 14px;
+  margin-top: 16px;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+/* ─── 하단 컨트롤 패널 ─── */
+.controls {
+  background: #fff;
+  padding: 16px 20px 24px;
+  border-radius: 24px 24px 0 0;
+}
+
+.mode-selector {
+  display: flex;
+  background: #F5F5F7;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: #6C63FF;
+  color: #fff;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.side-btn {
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 28px;
+}
+
+.side-label {
+  font-size: 11px;
+  color: #6B7280;
+  margin-top: 4px;
+}
+
+.capture-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #6C63FF;
+  border: 4px solid #8B83FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.capture-btn:active {
+  transform: scale(0.93);
+}
+
+.capture-btn:disabled {
+  background: #9E9E9E;
+  border-color: #E5E7EB;
+}
+
+.capture-inner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #6C63FF;
+}
+
+.camera-icon {
+  font-size: 28px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.disclaimer {
+  font-size: 11px;
+  color: #9CA3AF;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ─── 결과 모달 ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  max-height: 85vh;
+  width: 100%;
+  max-width: 480px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.preview-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.close-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #F5F5F7;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A2E;
+  cursor: pointer;
+  margin-top: 12px;
+}

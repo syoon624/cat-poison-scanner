@@ -1,0 +1,41 @@
+/* ============================================
+ * TimelineDateGroup 스타일
+ * ============================================ */
+
+.date-group { margin-bottom: 20px; }
+
+.date-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  margin-bottom: 8px;
+}
+
+.date-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #6B7280;
+}
+
+.date-text.today { color: #6C63FF; }
+
+.today-badge {
+  background: #6C63FF;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.count-badge {
+  background: #F5F5F7;
+  color: #9CA3AF;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.items-container { padding-left: 4px; }

@@ -1,0 +1,14 @@
+{
+  "name": "PurrfectScan - 반려묘 안전 스캐너",
+  "short_name": "PurrfectScan",
+  "description": "반려묘에게 위험한 식물/사물/성분을 스캔하고 건강을 관리하세요",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#6C63FF",
+  "theme_color": "#6C63FF",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

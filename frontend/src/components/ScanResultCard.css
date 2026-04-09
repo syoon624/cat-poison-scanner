@@ -1,0 +1,135 @@
+/* ============================================
+ * ScanResultCard 스타일
+ * ============================================ */
+
+.result-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.result-header h3 { font-size: 18px; margin: 0; color: #1A1A2E; }
+
+.risk-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.confidence-bar {
+  background: #F5F5F7;
+  border-radius: 8px;
+  height: 8px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.5s;
+}
+
+.confidence-bar span {
+  position: absolute;
+  right: 0;
+  top: 12px;
+  font-size: 11px;
+  color: #6B7280;
+}
+
+.result-details {
+  font-size: 14px;
+  color: #1A1A2E;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+
+.symptoms, .safe-ingredients, .hazards, .ocr-text {
+  margin: 12px 0;
+}
+
+.symptoms strong, .safe-ingredients strong, .hazards strong, .ocr-text strong {
+  display: block;
+  font-size: 13px;
+  color: #6B7280;
+  margin-bottom: 8px;
+}
+
+.ocr-text p {
+  background: #F5F5F7;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1A1A2E;
+  line-height: 1.5;
+}
+
+.symptom-tags, .ingredient-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.symptom-tag {
+  background: #FFEBEE;
+  color: #FF1744;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ingredient-tag.safe {
+  background: #E8F5E9;
+  color: #4CAF50;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hazard-item {
+  background: #FFF8F8;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.hazard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.hazard-name { font-size: 14px; font-weight: 600; color: #1A1A2E; }
+
+.hazard-badge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hazard-detail { font-size: 13px; color: #6B7280; margin: 0 0 8px; line-height: 1.5; }
+
+.card-disclaimer {
+  font-size: 11px;
+  color: #9CA3AF;
+  font-style: italic;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #E5E7EB;
+}
