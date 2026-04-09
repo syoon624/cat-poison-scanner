@@ -36,6 +36,10 @@ app.use(express.urlencoded({ extended: true }));
 // 업로드된 파일을 정적 파일로 서빙
 app.use('/uploads', express.static('uploads'));
 
+// PWA 프론트엔드 정적 파일 서빙 (Render 빌드 시 public/에 복사됨)
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
+
 // ============================================
 // API 라우트 등록
 // ============================================
@@ -61,8 +65,22 @@ app.get('/api/health', (req, res) => {
 });
 
 // ============================================
-// 404 핸들러 - 등록되지 않은 라우트
+// SPA 폴백 - API가 아닌 모든 GET 요청은 index.html로 (React Router 대응)
 // ============================================
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  const fs = require('fs');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({
+      success: false,
+      message: `요청한 경로를 찾을 수 없습니다: ${req.method} ${req.originalUrl}`
+    });
+  }
+});
+
+// API 외 POST/PUT/DELETE 등은 404
 app.use((req, res) => {
   res.status(404).json({
     success: false,

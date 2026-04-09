@@ -14,3 +14,6 @@ Thumbs.db
 
 # 업로드 파일
 uploads/
+
+# 프론트엔드 빌드 산출물 (Render에서 빌드 시 생성)
+backend/public/

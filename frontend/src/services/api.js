@@ -9,8 +9,10 @@
 
 import axios from 'axios';
 
-// 백엔드 서버 URL (Render.com 배포)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cat-poison-scanner.onrender.com';
+// 백엔드 서버 URL
+// 프로덕션: 같은 도메인에서 서빙되므로 빈 문자열 (상대 경로)
+// 개발: 로컬 백엔드 서버 (localhost:5000)
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 /**
  * Axios 인스턴스
