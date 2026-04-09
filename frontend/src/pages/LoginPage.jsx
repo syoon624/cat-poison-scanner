@@ -1,26 +1,63 @@
 /**
  * ============================================
- * LoginPage - 로그인 페이지 (Google OAuth)
+ * LoginPage - 로그인/회원가입 페이지
  * ============================================
- * 비로그인 사용자에게 표시되는 진입 화면.
- * Google Identity Services 버튼으로 로그인합니다.
+ * 두 가지 인증 방식을 지원합니다:
+ * 1. 이메일/비밀번호 (회원가입 & 로그인 전환 가능)
+ * 2. Google OAuth 소셜 로그인
  */
 
 import { GoogleLogin } from '@react-oauth/google';
 import { useState } from 'react';
-import { googleLogin } from '../services/api';
+import { googleLogin, emailLogin, emailRegister } from '../services/api';
 import useStore from '../store/useStore';
 import './LoginPage.css';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+
+  // 이메일 폼 상태
+  const [formEmail, setFormEmail] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [formName, setFormName] = useState('');
+
   const login = useStore((s) => s.login);
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  /** 이메일 폼 제출 (로그인 또는 회원가입) */
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    if (!formEmail.trim() || !formPassword) return;
+
     setIsLoading(true);
     setError('');
 
+    try {
+      let result;
+      if (isRegisterMode) {
+        result = await emailRegister(formEmail, formPassword, formName || undefined);
+      } else {
+        result = await emailLogin(formEmail, formPassword);
+      }
+
+      if (result.success) {
+        login(result.token, result.user);
+      } else {
+        setError(result.message || '처리에 실패했습니다.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.';
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /** Google 로그인 성공 */
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setIsLoading(true);
+    setError('');
     try {
       const result = await googleLogin(credentialResponse.credential);
       if (result.success) {
@@ -29,16 +66,17 @@ export default function LoginPage() {
         setError(result.message || '로그인에 실패했습니다.');
       }
     } catch (err) {
-      console.error('로그인 에러:', err);
-      const msg = err.response?.data?.message || '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.';
+      const msg = err.response?.data?.message || '서버에 연결할 수 없습니다.';
       setError(msg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleError = () => {
-    setError('Google 로그인에 실패했습니다. 다시 시도해주세요.');
+  /** 모드 전환 (로그인 ↔ 회원가입) */
+  const toggleMode = () => {
+    setIsRegisterMode(!isRegisterMode);
+    setError('');
   };
 
   return (
@@ -69,28 +107,74 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* ─── 이메일 폼 ─── */}
         <div className="login-divider">
-          <span>시작하기</span>
+          <span>{isRegisterMode ? '회원가입' : '로그인'}</span>
+        </div>
+
+        <form className="email-form" onSubmit={handleEmailSubmit}>
+          {isRegisterMode && (
+            <input
+              type="text"
+              className="form-input"
+              placeholder="이름 (선택)"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              autoComplete="name"
+            />
+          )}
+          <input
+            type="email"
+            className="form-input"
+            placeholder="이메일 주소"
+            value={formEmail}
+            onChange={(e) => setFormEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
+          <input
+            type="password"
+            className="form-input"
+            placeholder={isRegisterMode ? '비밀번호 (6자 이상)' : '비밀번호'}
+            value={formPassword}
+            onChange={(e) => setFormPassword(e.target.value)}
+            required
+            minLength={isRegisterMode ? 6 : undefined}
+            autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
+          />
+          <button
+            type="submit"
+            className="email-submit-btn"
+            disabled={isLoading || !formEmail.trim() || !formPassword}
+          >
+            {isLoading ? '처리 중...' : isRegisterMode ? '가입하기' : '로그인'}
+          </button>
+        </form>
+
+        <p className="toggle-mode">
+          {isRegisterMode ? '이미 계정이 있으신가요?' : '계정이 없으신가요?'}
+          {' '}
+          <button className="toggle-btn" onClick={toggleMode} type="button">
+            {isRegisterMode ? '로그인' : '회원가입'}
+          </button>
+        </p>
+
+        {/* ─── 구분선 + Google 로그인 ─── */}
+        <div className="login-divider">
+          <span>또는</span>
         </div>
 
         <div className="google-btn-wrapper">
-          {isLoading ? (
-            <div className="login-loading">
-              <div className="login-spinner" />
-              <p>로그인 중...</p>
-            </div>
-          ) : (
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              theme="outline"
-              size="large"
-              text="signin_with"
-              shape="rectangular"
-              width="300"
-              locale="ko"
-            />
-          )}
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError('Google 로그인에 실패했습니다.')}
+            theme="outline"
+            size="large"
+            text="signin_with"
+            shape="rectangular"
+            width="300"
+            locale="ko"
+          />
         </div>
 
         {error && <p className="login-error">{error}</p>}

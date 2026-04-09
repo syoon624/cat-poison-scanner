@@ -3,22 +3,28 @@
  * Auth Controller - 인증 컨트롤러
  * ============================================
  * 
- * Google OAuth 소셜 로그인을 처리합니다.
+ * 두 가지 인증 방식을 지원합니다:
  * 
- * 흐름:
- * 1. 프론트엔드에서 Google Identity Services로 ID 토큰 획득
- * 2. POST /api/auth/google 으로 ID 토큰 전송
- * 3. google-auth-library로 토큰 검증
- * 4. User 찾기 or 새로 생성 (upsert)
- * 5. JWT 발급하여 반환
+ * 1. 이메일/비밀번호 회원가입·로그인
+ *    - POST /api/auth/register (회원가입)
+ *    - POST /api/auth/login    (로그인)
+ * 
+ * 2. Google OAuth 소셜 로그인
+ *    - POST /api/auth/google   (Google ID 토큰 → JWT)
+ * 
+ * 공통: JWT 발급 → 프론트엔드에서 localStorage에 저장
  */
 
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Cat = require('../models/Cat');
 const ScanLog = require('../models/ScanLog');
 const { JWT_SECRET } = require('../middleware/auth');
+
+// bcrypt 해싱 비용 (높을수록 느리지만 안전)
+const SALT_ROUNDS = 10;
 
 // Google OAuth 클라이언트 (토큰 검증용)
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -30,6 +36,166 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
  */
 const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+};
+
+/**
+ * POST /api/auth/register
+ * 이메일/비밀번호 회원가입
+ * 
+ * @param {string} req.body.email - 이메일 주소
+ * @param {string} req.body.password - 비밀번호 (최소 6자)
+ * @param {string} [req.body.displayName] - 표시 이름 (선택)
+ * @returns {Object} { success, token, user }
+ */
+const register = async (req, res) => {
+  try {
+    const { email, password, displayName } = req.body;
+
+    // 입력값 검증
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: '이메일과 비밀번호는 필수입니다.'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: '비밀번호는 최소 6자 이상이어야 합니다.'
+      });
+    }
+
+    // 이메일 중복 확인
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: '이미 가입된 이메일입니다. 로그인해주세요.'
+      });
+    }
+
+    // 비밀번호 해싱
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // 사용자 생성
+    const user = await User.create({
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      displayName: (displayName || email.split('@')[0]).trim(),
+    });
+
+    console.log(`✨ 이메일 회원가입: ${user.email}`);
+
+    // 기본 고양이 프로필 생성
+    await Cat.create({
+      userId: user._id,
+      name: '우리 고양이',
+      birthDate: null,
+      weight: null,
+      preExistingConditions: [],
+    });
+    console.log(`🐱 기본 고양이 프로필 생성 완료`);
+
+    // JWT 발급
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        displayName: user.displayName,
+        profileImage: user.profileImage,
+      }
+    });
+  } catch (error) {
+    console.error('회원가입 에러:', error);
+
+    // Mongoose 유효성 검증 에러 처리
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(' ')
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: '회원가입 처리 중 오류가 발생했습니다.'
+    });
+  }
+};
+
+/**
+ * POST /api/auth/login
+ * 이메일/비밀번호 로그인
+ * 
+ * @param {string} req.body.email - 이메일 주소
+ * @param {string} req.body.password - 비밀번호
+ * @returns {Object} { success, token, user }
+ */
+const emailLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: '이메일과 비밀번호를 입력해주세요.'
+      });
+    }
+
+    // 사용자 조회
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: '이메일 또는 비밀번호가 올바르지 않습니다.'
+      });
+    }
+
+    // 소셜 로그인 전용 계정인 경우 (비밀번호 없음)
+    if (!user.passwordHash) {
+      return res.status(401).json({
+        success: false,
+        message: '이 계정은 Google 로그인으로 가입되었습니다. Google로 로그인해주세요.'
+      });
+    }
+
+    // 비밀번호 검증
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: '이메일 또는 비밀번호가 올바르지 않습니다.'
+      });
+    }
+
+    console.log(`🔑 이메일 로그인: ${user.email}`);
+
+    // JWT 발급
+    const token = generateToken(user._id);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        displayName: user.displayName,
+        profileImage: user.profileImage,
+      }
+    });
+  } catch (error) {
+    console.error('로그인 에러:', error);
+    res.status(500).json({
+      success: false,
+      message: '로그인 처리 중 오류가 발생했습니다.'
+    });
+  }
 };
 
 /**
@@ -201,4 +367,4 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-module.exports = { googleLogin, getMe, deleteAccount };
+module.exports = { register, emailLogin, googleLogin, getMe, deleteAccount };

@@ -43,6 +43,18 @@ apiClient.interceptors.response.use(
 // 인증 API
 // ============================================
 
+/** 이메일 회원가입 */
+export const emailRegister = async (email, password, displayName) => {
+  const response = await apiClient.post('/api/auth/register', { email, password, displayName });
+  return response.data;
+};
+
+/** 이메일 로그인 */
+export const emailLogin = async (email, password) => {
+  const response = await apiClient.post('/api/auth/login', { email, password });
+  return response.data;
+};
+
 /** Google 소셜 로그인 */
 export const googleLogin = async (idToken) => {
   const response = await apiClient.post('/api/auth/google', { idToken });

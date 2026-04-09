@@ -123,7 +123,7 @@ alwaysApply: true
 | 항목 | 기술 |
 |------|------|
 | Framework | Node.js + Express.js |
-| Auth | Google OAuth (google-auth-library) + JWT (jsonwebtoken) |
+| Auth | 이메일/비밀번호 (bcryptjs) + Google OAuth (google-auth-library) + JWT (jsonwebtoken) |
 | File Upload | Multer |
 | Database | MongoDB + Mongoose |
 | AI/Vision | Google Cloud Vision API (✅ 연동 완료) |
@@ -198,6 +198,8 @@ catpoison/
 
 | Method | Endpoint | 설명 | 인증 | 상태 |
 |--------|----------|------|------|------|
+| POST | `/api/auth/register` | 이메일/비밀번호 회원가입 | - | ✅ |
+| POST | `/api/auth/login` | 이메일/비밀번호 로그인 | - | ✅ |
 | POST | `/api/auth/google` | Google 소셜 로그인 (idToken→JWT) | - | ✅ |
 | GET | `/api/auth/me` | 현재 사용자 정보 | 필수 | ✅ |
 | DELETE | `/api/auth/account` | 계정 삭제 (관련 데이터 일괄 삭제) | 필수 | ✅ |
@@ -340,7 +342,7 @@ catpoison/
 | 스캔 결과 피드백 | 3단계 컬러 (Safe/Warning/Toxic) | 직관적 UX, 명세서 요구사항 |
 | 타임라인 UI | 수직 트리 (border-left + 원형 노드) | 명세서의 CSS 트리구조 요구사항 준수 |
 | Mock 폴백 | 제거됨 → "인식할 수 없음" 반환 | 사용자 요청: 정직한 응답 |
-| 인증 | Google OAuth + JWT | 소셜 로그인 간편성, 무료 |
+| 인증 | 이메일/비밀번호 + Google OAuth + JWT | 이메일 일반가입 + 소셜 로그인 병행 |
 | 세션 관리 | JWT 7일 유효 + localStorage | PWA에서 쿠키 대신 토큰 사용 |
 | 법적 고지 | 모든 스캔 결과에 상시 노출 | 명세서 필수 요구사항 |
 
