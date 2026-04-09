@@ -18,36 +18,57 @@
   align-items: center;
   justify-content: center;
   background: #1a1a2e;
+  min-height: 0;
 }
 
+/* 카메라 비디오: 영역 전체를 채움 */
 .camera-video {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
 .captured-image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  background: #000;
 }
 
+/* ─── 초기 상태: 카메라 시작 유도 ─── */
 .camera-placeholder {
   text-align: center;
   color: #9CA3AF;
+  cursor: pointer;
+  padding: 40px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .placeholder-icon {
-  font-size: 60px;
+  font-size: 72px;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
-.camera-placeholder p {
+.placeholder-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.placeholder-desc {
   font-size: 14px;
+  color: #9CA3AF;
 }
 
-/* ─── 스캔 가이드 프레임 오버레이 ─── */
+/* ─── 스캔 가이드 오버레이 ─── */
 .scan-overlay {
   position: absolute;
   inset: 0;
@@ -56,6 +77,7 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 2;
 }
 
 .scan-frame {
@@ -68,7 +90,7 @@
   position: absolute;
   width: 28px;
   height: 28px;
-  border-color: #fff;
+  border-color: rgba(255,255,255,0.8);
 }
 
 .corner.top-left { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; border-radius: 8px 0 0 0; }
@@ -80,7 +102,32 @@
   color: #fff;
   font-size: 14px;
   margin-top: 16px;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+  text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
+}
+
+/* ─── 분석 중 오버레이 ─── */
+.scanning-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.scanning-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255,255,255,0.3);
+  border-top-color: #6C63FF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
 }
 
 /* ─── 하단 컨트롤 패널 ─── */
@@ -88,6 +135,7 @@
   background: #fff;
   padding: 16px 20px 24px;
   border-radius: 24px 24px 0 0;
+  flex-shrink: 0;
 }
 
 .mode-selector {
@@ -140,6 +188,7 @@
   margin-top: 4px;
 }
 
+/* 캡처 버튼 */
 .capture-btn {
   width: 68px;
   height: 68px;
@@ -153,13 +202,23 @@
   transition: transform 0.1s;
 }
 
-.capture-btn:active {
-  transform: scale(0.93);
+/* 카메라 켜진 상태에서는 빨간 테두리로 "촬영" 느낌 */
+.capture-btn.capturing {
+  border-color: #FF1744;
+  animation: pulse 1.5s ease-in-out infinite;
 }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,23,68,0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(255,23,68,0); }
+}
+
+.capture-btn:active { transform: scale(0.93); }
 
 .capture-btn:disabled {
   background: #9E9E9E;
   border-color: #E5E7EB;
+  animation: none;
 }
 
 .capture-inner {
@@ -170,9 +229,7 @@
   border: 2px solid #6C63FF;
 }
 
-.camera-icon {
-  font-size: 28px;
-}
+.camera-icon { font-size: 28px; }
 
 .spinner {
   width: 28px;
