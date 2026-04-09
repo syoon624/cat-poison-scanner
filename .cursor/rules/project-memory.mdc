@@ -8,7 +8,7 @@ alwaysApply: true
 
 > **이 파일의 목적:** 다른 컴퓨터에서 git clone 후 AI(Cursor)가 이 파일을 읽으면,
 > 프로젝트의 전체 맥락·약속·진행 상황을 기억하고 이전과 동일하게 작업을 이어갈 수 있습니다.
-> **마지막 업데이트:** 2026-04-08
+> **마지막 업데이트:** 2026-04-09
 
 ---
 
@@ -39,8 +39,10 @@ alwaysApply: true
 
 - **프로젝트명:** PurrfectScan (반려묘 안전/건강 복합 관리 앱)
 - **GitHub:** https://github.com/syoon624/cat-poison-scanner.git
-- **목적:** 식물/사물/성분표를 스캔하여 고양이에게 유해한 성분을 판별하고, 건강 기록을 타임라인으로 관리하는 iOS 앱
-- **타겟 플랫폼:** iOS (Expo Go로 실행, EAS Build 미사용)
+- **목적:** 식물/사물/성분표를 스캔하여 고양이에게 유해한 성분을 판별하고, 건강 기록을 타임라인으로 관리
+- **타겟 플랫폼:** PWA 웹앱 (모바일 브라우저 홈 화면 추가로 앱처럼 사용)
+- **이전 프론트엔드:** React Native + Expo → `frontend-native/`에 보존
+- **현재 프론트엔드:** React + Vite + CSS (PWA) → `frontend/`
 - **배포 백엔드:** https://cat-poison-scanner.onrender.com (Render.com 무료)
 - **DB:** MongoDB Atlas M0 (cluster0.asxy82g.mongodb.net/purrfectscan)
 - **주요 언어:** JavaScript (Full-Stack 100% JS)
@@ -91,14 +93,25 @@ alwaysApply: true
 
 ## 📌 3. 기술 스택 상세
 
-### Front-End (frontend/)
+### Front-End — PWA 웹앱 (frontend/)
+| 항목 | 기술 |
+|------|------|
+| Framework | React 18 + Vite 5 |
+| State | Zustand |
+| Routing | React Router DOM (하단 탭 네비게이션) |
+| Camera | Web Camera API (navigator.mediaDevices.getUserMedia) |
+| Styling | 일반 CSS (CSS Modules 아님, 파일별 분리) |
+| Network | Axios |
+| PWA | manifest.json + Service Worker |
+
+### Front-End — 기존 네이티브 (frontend-native/, 보존됨)
 | 항목 | 기술 |
 |------|------|
 | Framework | React Native + Expo (SDK 54) |
 | State | Zustand |
 | Navigation | React Navigation (Bottom Tabs) |
 | Camera | expo-camera, expo-image-picker |
-| Styling | StyleSheet (타임라인은 CSS 트리구조) |
+| Styling | StyleSheet |
 | Network | Axios |
 
 ### Back-End (backend/)
@@ -124,40 +137,42 @@ catpoison/
 │   │   ├── chatController.js    # 챗봇 (OpenAI + DB 검색)
 │   │   └── timelineController.js # 타임라인 CRUD
 │   ├── services/
-│   │   ├── visionService.js     # Google Cloud Vision API 호출 (라벨감지/OCR)
-│   │   └── openaiService.js     # OpenAI API 호출 (독성분석/성분분석/챗봇)
+│   │   ├── visionService.js     # Google Cloud Vision API 호출
+│   │   └── openaiService.js     # OpenAI API 호출
 │   ├── data/toxicitySeeds.js    # 독성 DB 시드 데이터 (21종)
 │   ├── middleware/upload.js     # Multer 파일 업로드
 │   ├── models/
-│   │   ├── User.js         # 사용자 모델
-│   │   ├── Cat.js          # 고양이 프로필 모델
-│   │   ├── ScanLog.js      # 스캔/이벤트 기록 모델
-│   │   └── ToxicityDB.js   # 독성 물질 사전 모델
+│   │   ├── User.js, Cat.js, ScanLog.js, ToxicityDB.js
 │   ├── routes/
-│   │   ├── scan.js         # POST /api/scan/image
-│   │   ├── chat.js         # POST /api/chat/ask
-│   │   └── timeline.js     # GET/POST /api/timeline
+│   │   ├── scan.js, chat.js, timeline.js
 │   ├── server.js           # Express 서버 진입점
 │   ├── package.json
-│   └── .env.example        # 환경 변수 템플릿
-├── frontend/
+│   └── .env.example
+├── frontend/               # ★ PWA 웹앱 (React + Vite + CSS)
+│   ├── public/
+│   │   ├── manifest.json   # PWA 매니페스트
+│   │   └── sw.js           # Service Worker (오프라인 캐싱)
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ScanResultCard.js    # 스캔 결과 카드
-│   │   │   ├── TimelineItem.js      # 타임라인 개별 항목
-│   │   │   └── TimelineDateGroup.js # 날짜별 그룹 래퍼
-│   │   ├── navigation/
-│   │   │   └── AppNavigator.js      # Bottom Tab 네비게이션
-│   │   ├── screens/
-│   │   │   ├── ScannerScreen.js     # 카메라/OCR 스캔 화면
-│   │   │   ├── ChatScreen.js        # 냥챗 화면
-│   │   │   └── TimelineScreen.js    # 타임라인 화면
-│   │   ├── services/api.js          # Axios API 통신 모듈
-│   │   ├── store/useStore.js        # Zustand 전역 상태
-│   │   └── styles/colors.js         # 컬러 팔레트 + 유틸
-│   ├── App.js              # 앱 진입점
+│   │   │   ├── ScanResultCard.jsx + .css
+│   │   │   ├── TimelineItem.jsx + .css
+│   │   │   └── TimelineDateGroup.jsx + .css
+│   │   ├── pages/
+│   │   │   ├── ScannerPage.jsx + .css   # Web Camera API 스캔
+│   │   │   ├── ChatPage.jsx + .css      # AI 챗봇
+│   │   │   └── TimelinePage.jsx + .css  # 타임라인
+│   │   ├── services/api.js      # Axios API 통신
+│   │   ├── store/useStore.js    # Zustand 전역 상태
+│   │   ├── styles/colors.js     # 컬러 팔레트
+│   │   ├── App.jsx + App.css    # 라우팅 + 하단 탭
+│   │   └── main.jsx             # Vite 진입점 + SW 등록
+│   ├── index.html           # PWA 메타태그 포함
+│   ├── vite.config.js
+│   ├── .env.example
 │   └── package.json
-├── render.yaml            # Render.com 배포 설정 파일
+├── frontend-native/        # 기존 React Native 코드 (보존용)
+│   └── (Expo 프로젝트 전체)
+├── render.yaml            # Render.com 배포 설정
 ├── README.md
 └── LICENSE (MIT)
 ```
@@ -242,18 +257,38 @@ catpoison/
 - expo-constants 패키지 설치 (환경 설정 읽기용)
 - Expo Go 앱으로 아이폰에서 실행 가능 (LAN 모드)
 
+#### Phase 6: PWA 웹앱 전환 (커밋: `3f03ef0` ~ `a46c35a`)
+- App Store 비용 문제로 React Native → PWA 전환 결정
+- frontend/ → frontend-native/로 이름 변경 (기존 코드 보존)
+- React + Vite 5 프로젝트 생성 (frontend/)
+- 일반 CSS 스타일링 (Tailwind 미사용, 사용자 요청)
+- ScannerPage: Web Camera API 기반 카메라 캡처 + 파일 선택
+- ChatPage: 채팅 UI + 자동 스크롤 + 빠른 질문 + 타이핑 인디케이터
+- TimelinePage: 날짜별 그룹화 + 필터 + 기록 추가 모달
+- 컴포넌트: ScanResultCard, TimelineItem, TimelineDateGroup (CSS 포함)
+- 하단 탭 네비게이션 (React Router DOM NavLink)
+- PWA: manifest.json + Service Worker (오프라인 캐싱)
+- Zustand, Axios 그대로 포팅 (웹 환경 호환)
+- 빌드 성공 확인 (vite build)
+
 ### 🔲 미완료 / 다음 단계
 
-1. **사용자 인증 시스템** (회원가입/로그인)
+1. **PWA 프론트엔드 배포** (Netlify, Vercel, 또는 Render Static Site)
+   - `npm run build` → dist/ 폴더 배포
+   
+2. **PWA 아이콘 제작** (icon-192.png, icon-512.png)
+   - 현재 placeholder 파일만 존재
+
+3. **사용자 인증 시스템** (회원가입/로그인)
    - JWT 또는 세션 기반 인증
    - User 모델 활용
 
-2. **이미지 클라우드 스토리지** (S3 또는 Firebase Storage)
+4. **이미지 클라우드 스토리지** (S3 또는 Firebase Storage)
    - 현재 로컬 uploads/ 폴더 사용
 
-3. **독립 앱 빌드** (EAS Build)
+5. **네이티브 앱 빌드** (선택적, 추후)
+   - frontend-native/ 코드 활용
    - Apple Developer 계정($99/년) 필요
-   - 현재는 Expo Go로 실행 가능
 
 ---
 
@@ -319,39 +354,48 @@ npm run dev
 # → http://localhost:5000/api/health 접속하여 정상 확인
 ```
 
-### 9-4. 프론트엔드 설정
+### 9-4. 프론트엔드 설정 (PWA 웹앱)
 
 ```bash
 cd ../frontend
 npm install
 ```
 
-> `npm install`만 하면 모든 의존성(expo, react-navigation, zustand, axios, expo-camera,
-> expo-image-picker, expo-constants, @expo/ngrok 등)이 자동 설치됩니다.
+> 의존성: react, react-dom, react-router-dom, axios, zustand, vite
 
-### 9-5. 아이폰에서 앱 실행 (Expo Go)
-
-**방법 A: 같은 WiFi (가장 간단)**
+**로컬 개발 서버 실행:**
 ```bash
-cd frontend
+npm run dev
+# → http://localhost:5173 에서 실행
+```
+
+**프로덕션 빌드:**
+```bash
+npm run build
+# → dist/ 폴더에 정적 파일 생성
+```
+
+### 9-5. 아이폰에서 PWA 사용하기
+
+1. 아이폰 Safari에서 배포된 URL (또는 PC 개발서버 URL) 접속
+2. 하단 공유 버튼 → **"홈 화면에 추가"** 선택
+3. 앱 아이콘이 생성되며 전체화면(standalone) 모드로 실행
+4. 오프라인 캐싱(Service Worker) 덕분에 기본 UI는 오프라인에서도 표시
+
+> ⚠️ 로컬 개발 시 PC와 아이폰이 같은 WiFi에 있어야 합니다.
+> Vite 개발 서버는 `--host` 옵션으로 외부 접근 허용:
+> ```bash
+> npm run dev -- --host
+> ```
+
+### 9-5-B. 기존 React Native 앱 실행 (선택적)
+
+기존 네이티브 코드가 `frontend-native/`에 보존되어 있습니다.
+```bash
+cd frontend-native
+npm install
 npx expo start
 ```
-- 아이폰과 PC를 **같은 WiFi**에 연결
-- 아이폰에서 **Expo Go** 앱 설치 (App Store 무료)
-- Expo Go에서 터미널에 표시된 QR 코드 스캔 또는 URL 직접 입력
-
-**방법 B: 다른 네트워크 (핫스팟)**
-- 아이폰에서 **개인용 핫스팟** 켜기
-- PC를 아이폰 핫스팟에 WiFi 연결
-- 위와 동일하게 `npx expo start` → Expo Go 스캔
-
-**방법 C: 터널 모드 (네트워크 무관, 불안정할 수 있음)**
-```bash
-cd frontend
-npx expo start --tunnel
-```
-- ngrok 터널을 통해 인터넷 경유로 연결
-- ⚠️ 대학교/기업 네트워크에서는 ngrok이 차단될 수 있음
 
 ### 9-6. 이미 배포된 클라우드 서비스
 
@@ -370,7 +414,7 @@ npx expo start --tunnel
 새 환경에서 AI(Cursor)에게 작업을 요청하면, AI는:
 1. 이 파일을 읽고 프로젝트 맥락 파악
 2. `backend/.env` 파일 존재 여부 확인 → 없으면 사용자에게 생성 요청
-3. `node_modules` 존재 여부 확인 → 없으면 `npm install` 실행 (backend/ + frontend/ 둘 다)
+3. `node_modules` 존재 여부 확인 → 없으면 `npm install` 실행 (backend/ + frontend/ 둘 다. frontend-native/는 필요 시에만)
 4. 작업 완료 후 이 파일 업데이트 + 커밋 & push
 
 ---
@@ -483,6 +527,45 @@ git config user.email "syoon624@users.noreply.github.com"
 - 사용자 인증 시스템 (JWT) 구현
 - 이미지 클라우드 스토리지 연동
 - EAS Build (독립 앱) - Apple Developer 계정 필요
+
+### 📝 세션 #4 — 2026-04-09 (Phase 6: PWA 웹앱 전환)
+
+**환경:** Windows 10 / PowerShell / Cursor  
+**작업 범위:** Phase 6 - React Native → PWA 웹앱 전환
+
+| 순서 | 작업 내용 | 커밋 메시지 | 커밋 해시 |
+|------|-----------|-------------|-----------|
+| 1 | frontend/ → frontend-native/ 이름 변경 | `rename: frontend/ -> frontend-native/ (PWA 전환 준비)` | `3f03ef0` |
+| 2 | React + Vite 5 프로젝트 생성, Axios/Zustand/React Router DOM 설치, 전체 페이지+컴포넌트+스타일 구현, PWA manifest/SW, 빌드 성공 확인 | `feat: PWA 웹앱 프론트엔드 구축 (React + Vite + CSS)` | `a46c35a` |
+| 3 | 기억이식 파일 Phase 6 업데이트 | `docs: 기억이식 파일 Phase 6 PWA 전환 기록 업데이트` | (이번 커밋) |
+
+**세션 요약:**
+- App Store 비용 문제로 네이티브 앱 대신 PWA 웹앱으로 전환
+- 사용자 요청: Tailwind 대신 일반 CSS 사용 (가독성)
+- 기존 React Native 코드는 frontend-native/에 보존 (나중에 네이티브 앱 필요 시 재활용)
+- 새 frontend/: React 18 + Vite 5 + React Router DOM + Zustand + Axios
+- 모든 3개 화면(스캔/챗봇/타임라인) + 3개 컴포넌트 포팅 완료
+- Web Camera API로 카메라 캡처 + 파일 선택 지원
+- PWA manifest.json + Service Worker (network-first, 오프라인 캐시 폴백)
+- 빌드 성공 확인 (vite build → dist/ 생성)
+
+**변환 매핑 (React Native → React Web):**
+| React Native | React Web (PWA) |
+|---|---|
+| expo-camera (CameraView) | navigator.mediaDevices.getUserMedia |
+| expo-image-picker | `<input type="file" accept="image/*">` |
+| React Navigation (Bottom Tabs) | React Router DOM + CSS 탭 바 |
+| StyleSheet.create({}) | 파일별 .css 파일 |
+| FlatList | div + map |
+| Modal | CSS position:fixed 모달 |
+| Alert.alert() | window.alert() |
+| KeyboardAvoidingView | 불필요 (웹 자동 처리) |
+
+**다음 세션에서 이어할 사항:**
+- PWA 프론트엔드 배포 (Netlify/Vercel)
+- PWA 아이콘 제작 (icon-192.png, icon-512.png)
+- 실제 기기에서 테스트 (카메라, 홈 화면 추가)
+- 사용자 인증 시스템 구현
 
 ---
 
