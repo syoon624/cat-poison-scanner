@@ -11,7 +11,7 @@ services:
     region: singapore
     plan: free
     # rootDir 없음 → 저장소 루트에서 빌드
-    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install && cp -r ../frontend/dist ./public
+    buildCommand: cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install && cp -r ../frontend/dist ./public
     startCommand: cd backend && node server.js
     envVars:
       - key: NODE_ENV
