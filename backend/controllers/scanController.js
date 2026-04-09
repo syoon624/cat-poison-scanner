@@ -57,24 +57,22 @@ const scanImage = async (req, res) => {
       });
     }
 
-    console.log(`📸 스캔 요청 수신 - 모드: ${scanType}, 파일: ${req.file.filename}`);
+    console.log(`📸 스캔 요청 수신 - 모드: ${scanType}, 크기: ${(req.file.size / 1024).toFixed(1)}KB`);
 
     let result;
 
-    // ─── 2. 스캔 모드별 처리 분기 ───
+    // ─── 2. 스캔 모드별 처리 분기 (메모리 Buffer 전달) ───
     if (scanType === 'object') {
-      result = await handleObjectScan(req.file.path);
+      result = await handleObjectScan(req.file.buffer);
     } else {
-      result = await handleOCRScan(req.file.path);
+      result = await handleOCRScan(req.file.buffer);
     }
 
-    // 법적 고지 문구 (모든 스캔 결과에 포함 - 명세서 필수 요구사항)
     const legalDisclaimer = '⚠️ 본 결과는 참고용이며, 최종 판단 및 응급 상황은 수의사와 상담하십시오.';
 
     res.json({
       success: true,
       scanType,
-      imageUrl: `/uploads/${req.file.filename}`,
       result,
       disclaimer: legalDisclaimer
     });
@@ -100,14 +98,14 @@ const scanImage = async (req, res) => {
  * 3. OpenAI → DB 결과 + Vision 라벨로 정밀 판단
  * 4. 폴백: Vision API 실패 → "인식할 수 없음" / OpenAI 실패 → DB만 사용
  * 
- * @param {string} imagePath - 업로드된 이미지 파일 경로
+ * @param {Buffer} imageBuffer - 업로드된 이미지 Buffer
  * @returns {Object} 분석 결과
  */
-const handleObjectScan = async (imagePath) => {
+const handleObjectScan = async (imageBuffer) => {
   // ─── Step 1: Vision API 라벨 감지 ───
   let visionResult;
   try {
-    visionResult = await detectLabels(imagePath);
+    visionResult = await detectLabels(imageBuffer);
   } catch (visionError) {
     console.warn('⚠️ Vision API 호출 실패:', visionError.message);
     return {
@@ -216,14 +214,14 @@ const handleObjectScan = async (imagePath) => {
  * 2. OpenAI → 성분 파싱 + 유해 성분 판별
  * 3. 폴백: Vision 실패 → "인식할 수 없음" / OpenAI 실패 → DB 키워드 매칭
  * 
- * @param {string} imagePath - 업로드된 이미지 파일 경로
+ * @param {Buffer} imageBuffer - 업로드된 이미지 Buffer
  * @returns {Object} 성분 분석 결과
  */
-const handleOCRScan = async (imagePath) => {
+const handleOCRScan = async (imageBuffer) => {
   // ─── Step 1: Vision API OCR 텍스트 추출 ───
   let ocrResult;
   try {
-    ocrResult = await extractText(imagePath);
+    ocrResult = await extractText(imageBuffer);
   } catch (visionError) {
     console.warn('⚠️ Vision API OCR 실패:', visionError.message);
     return {

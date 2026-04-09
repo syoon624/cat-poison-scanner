@@ -20,24 +20,9 @@
  */
 
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 
 // Google Cloud Vision API 엔드포인트 (REST API)
 const VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate';
-
-/**
- * 이미지 파일을 base64로 인코딩
- * Vision API는 base64 인코딩된 이미지 데이터를 요구합니다.
- * 
- * @param {string} filePath - 로컬 이미지 파일 경로
- * @returns {string} base64 인코딩된 이미지 문자열
- */
-const encodeImageToBase64 = (filePath) => {
-  const absolutePath = path.resolve(filePath);
-  const imageBuffer = fs.readFileSync(absolutePath);
-  return imageBuffer.toString('base64');
-};
 
 /**
  * 이미지에서 객체/식물/사물 라벨을 감지합니다.
@@ -47,22 +32,20 @@ const encodeImageToBase64 = (filePath) => {
  * 2. Vision API에 LABEL_DETECTION + WEB_DETECTION 요청
  * 3. 감지된 라벨 목록과 신뢰도를 반환
  * 
- * @param {string} imagePath - 분석할 이미지 파일의 로컬 경로
+ * @param {Buffer} imageBuffer - 이미지 바이너리 Buffer
  * @returns {Promise<Object>} 감지 결과
  *   - labels: [{ name, score, mid }] 라벨 목록
  *   - webEntities: [{ description, score }] 웹 엔티티 (더 정확한 식별)
  *   - bestGuess: 가장 유력한 식별 결과
  */
-const detectLabels = async (imagePath) => {
+const detectLabels = async (imageBuffer) => {
   const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
   
-  // API 키 미설정 시 에러
   if (!apiKey) {
     throw new Error('GOOGLE_CLOUD_VISION_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.');
   }
 
-  // 이미지를 base64로 인코딩
-  const imageBase64 = encodeImageToBase64(imagePath);
+  const imageBase64 = imageBuffer.toString('base64');
 
   // Vision API 요청 본문 구성
   // LABEL_DETECTION: 일반적인 객체/식물/사물 라벨
@@ -137,19 +120,19 @@ const detectLabels = async (imagePath) => {
  * 2. Vision API에 TEXT_DETECTION 요청
  * 3. 추출된 전체 텍스트와 개별 단어/블록 반환
  * 
- * @param {string} imagePath - 분석할 이미지 파일의 로컬 경로
+ * @param {Buffer} imageBuffer - 이미지 바이너리 Buffer
  * @returns {Promise<Object>} OCR 결과
  *   - fullText: 추출된 전체 텍스트
  *   - blocks: 개별 텍스트 블록 배열
  */
-const extractText = async (imagePath) => {
+const extractText = async (imageBuffer) => {
   const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
 
   if (!apiKey) {
     throw new Error('GOOGLE_CLOUD_VISION_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.');
   }
 
-  const imageBase64 = encodeImageToBase64(imagePath);
+  const imageBase64 = imageBuffer.toString('base64');
 
   // Vision API 요청 - TEXT_DETECTION (OCR)
   // DOCUMENT_TEXT_DETECTION은 긴 문서에 더 적합하지만,
