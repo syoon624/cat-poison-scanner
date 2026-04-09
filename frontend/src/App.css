@@ -17,13 +17,16 @@ html, body, #root {
   -moz-osx-font-smoothing: grayscale;
   background: #F5F5F7;
   color: #1A1A2E;
+  /* iOS 노치/상태바 영역 대응 */
+  padding-top: env(safe-area-inset-top);
 }
 
 /* 앱 셸: 전체 화면을 채우는 flex 컨테이너 */
 .app-shell {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100dvh;
+  height: calc(100vh - env(safe-area-inset-top));
   max-width: 480px;
   margin: 0 auto;
   background: #fff;
