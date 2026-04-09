@@ -8,7 +8,7 @@ alwaysApply: true
 
 > **이 파일의 목적:** 다른 컴퓨터에서 git clone 후 AI(Cursor)가 이 파일을 읽으면,
 > 프로젝트의 전체 맥락·약속·진행 상황을 기억하고 이전과 동일하게 작업을 이어갈 수 있습니다.
-> **마지막 업데이트:** 2026-04-09 (Phase 7: 인증 + 타임라인 + 스캐너 개선)
+> **마지막 업데이트:** 2026-04-09 (Phase 8: 이메일 인증 + PWA 안정화 + 타임라인 상세 모달)
 
 ---
 
@@ -103,7 +103,7 @@ alwaysApply: true
 | Framework | React 18 + Vite 5 |
 | State | Zustand (localStorage 연동 인증 유지) |
 | Routing | React Router DOM (하단 탭 네비게이션 4탭) |
-| Auth | @react-oauth/google (Google Identity Services) |
+| Auth | 이메일 폼 + @react-oauth/google (Google Identity Services) |
 | Camera | Web Camera API (navigator.mediaDevices.getUserMedia) |
 | Styling | 일반 CSS (CSS Modules 아님, 파일별 분리) |
 | Network | Axios (JWT 인터셉터, 401 자동 로그아웃) |
@@ -124,7 +124,7 @@ alwaysApply: true
 |------|------|
 | Framework | Node.js + Express.js |
 | Auth | 이메일/비밀번호 (bcryptjs) + Google OAuth (google-auth-library) + JWT (jsonwebtoken) |
-| File Upload | Multer |
+| File Upload | Multer (memoryStorage, 디스크 저장 없음) |
 | Database | MongoDB + Mongoose |
 | AI/Vision | Google Cloud Vision API (✅ 연동 완료) |
 | LLM | OpenAI API gpt-4o-mini (✅ 연동 완료) |
@@ -168,10 +168,11 @@ catpoison/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ScanResultCard.jsx + .css
-│   │   │   ├── TimelineItem.jsx + .css  (삭제 버튼 추가)
-│   │   │   └── TimelineDateGroup.jsx + .css
+│   │   │   ├── TimelineItem.jsx + .css  (클릭→상세, 삭제)
+│   │   │   ├── TimelineDateGroup.jsx + .css
+│   │   │   └── TimelineDetailModal.jsx + .css  # ★ Phase 8 상세 모달
 │   │   ├── pages/
-│   │   │   ├── LoginPage.jsx + .css     # ★ Google 로그인
+│   │   │   ├── LoginPage.jsx + .css     # ★ 이메일 + Google 로그인
 │   │   │   ├── SettingsPage.jsx + .css  # ★ 프로필/고양이/계정 관리
 │   │   │   ├── ScannerPage.jsx + .css   # Web Camera API 스캔 + 타임라인 저장
 │   │   │   ├── ChatPage.jsx + .css      # AI 챗봇 + 타임라인 저장
@@ -226,7 +227,7 @@ catpoison/
 `{ _id, userId(→User), name, birthDate, weight, preExistingConditions:[] }`
 
 ### ScanLogs (타임라인 핵심)
-`{ _id, userId, catId, type(PLANT|INGREDIENT|CHAT|SYMPTOM|HOSPITAL), content, riskLevel(SAFE|WARNING|TOXIC|NONE), imageUrl, palatabilityRating(1~5), timestamp }`
+`{ _id, userId, catId, type(PLANT|INGREDIENT|CHAT|SYMPTOM|HOSPITAL), content, riskLevel(SAFE|WARNING|TOXIC|NONE), scanData(Mixed/JSON, 스캔 결과 전체), memo(String), imageUrl, palatabilityRating(1~5), timestamp }`
 
 ### ToxicityDB (독성 사전)
 `{ itemName, itemNameKo, aliases:[], category(PLANT|FOOD|CHEMICAL), toxicityLevel(HIGH|MEDIUM|LOW), symptoms:[], description }`
@@ -310,26 +311,31 @@ catpoison/
 - Zustand: 인증 상태 + localStorage 연동 + 고양이 프로필 관리
 - Axios 인터셉터: JWT 자동 첨부, 401 시 자동 로그아웃
 
+#### Phase 8: 이메일 인증 + PWA 안정화 + 타임라인 상세
+- 이메일/비밀번호 회원가입·로그인 (bcryptjs, POST /api/auth/register, /api/auth/login)
+- LoginPage: 이메일 폼(회원가입↔로그인 전환) + Google 로그인 병행
+- PWA Safe Area Insets 수정 (상태바 겹침, 하단 빈 공간)
+- Multer: diskStorage → memoryStorage (디스크 저장 없이 Buffer 처리)
+- 스캔 FormData Content-Type boundary 자동 포함 (undefined 설정)
+- 스캔 성공 시 자동 타임라인 기록 (수동 버튼 불필요)
+- 앱 시작 시 고양이 목록 자동 로드 (설정 탭 방문 불필요)
+- Vision API 결제 활성화 진단 + API 키 갱신
+- ScanLog 스키마 확장: scanData(Mixed), memo(String) 필드
+- TimelineDetailModal: 타임라인 카드 클릭 시 상세 보기 (스캔 결과, OCR 텍스트, 유해 성분, 메모 편집)
+
 ### 🔲 미완료 / 다음 단계
 
-1. **Google OAuth 클라이언트 ID 발급**
-   - Google Cloud Console에서 OAuth 2.0 클라이언트 ID 생성
-   - 백엔드: `GOOGLE_CLIENT_ID` 환경변수 설정
-   - 프론트엔드: `VITE_GOOGLE_CLIENT_ID` 환경변수 설정
-   - Render.com 환경변수에도 추가 필요
-   
-2. **JWT_SECRET 환경변수 설정**
-   - 프로덕션에서 강력한 시크릿 키 사용 필요
-
-3. **PWA 아이콘 제작** (icon-192.png, icon-512.png)
+1. **PWA 아이콘 제작** (icon-192.png, icon-512.png)
    - 현재 placeholder 파일만 존재
 
-4. **이미지 클라우드 스토리지** (S3 또는 Firebase Storage)
-   - 현재 로컬 uploads/ 폴더 사용
-
-5. **네이티브 앱 빌드** (선택적, 추후)
+2. **네이티브 앱 빌드** (선택적, 추후)
    - frontend-native/ 코드 활용
    - Apple Developer 계정($99/년) 필요
+
+3. **UX 개선 후보**
+   - 타임라인 기록 수정 모달 (현재 메모만 수정 가능)
+   - 고양이 프로필 사진 업로드
+   - 스캔 히스토리 별도 탭/뷰
 
 ---
 
@@ -345,6 +351,9 @@ catpoison/
 | 인증 | 이메일/비밀번호 + Google OAuth + JWT | 이메일 일반가입 + 소셜 로그인 병행 |
 | 세션 관리 | JWT 7일 유효 + localStorage | PWA에서 쿠키 대신 토큰 사용 |
 | 법적 고지 | 모든 스캔 결과에 상시 노출 | 명세서 필수 요구사항 |
+| 파일 업로드 | Multer memoryStorage (디스크 미사용) | Render.com 무료 티어의 ephemeral 파일시스템 호환 |
+| 스캔 자동 저장 | 스캔 성공 시 자동으로 타임라인 기록 | UX 편의 (별도 저장 버튼 불필요) |
+| scanData 저장 | ScanLog에 전체 결과 JSON 보존 | 상세 모달에서 과거 스캔 결과 완전 재현 |
 
 ---
 
@@ -655,6 +664,44 @@ git config user.email "syoon624@users.noreply.github.com"
 - Render.com에 새 환경변수 추가 후 재배포
 - 실제 기기에서 Google 로그인 테스트
 - PWA 아이콘 제작
+
+### 📝 세션 #6 — 2026-04-09 (Phase 8: 이메일 인증 + PWA 안정화 + 타임라인 상세)
+
+**환경:** Windows 10 / PowerShell / Cursor  
+**작업 범위:** Phase 8 - 이메일 인증 추가, PWA 레이아웃/스캔 버그 수정, 타임라인 상세 모달
+
+| 순서 | 작업 내용 | 커밋 해시 |
+|------|-----------|-----------|
+| 1 | **이메일/비밀번호 회원가입·로그인 추가**: bcryptjs 설치, register/emailLogin API, LoginPage에 이메일 폼 + 모드 전환(로그인↔회원가입) | `10b1f26` |
+| 2 | **환경변수 설정**: GOOGLE_CLIENT_ID, JWT_SECRET 생성, 프론트엔드 .env 생성 (VITE_GOOGLE_CLIENT_ID), Render.com에도 3개 변수 추가 안내 | — |
+| 3 | **PWA Safe Area 수정 (1차)**: padding-top env(safe-area-inset-top) 적용 → 3중 적용 문제 발생 | `9a01756` |
+| 4 | **PWA Safe Area 수정 (2차)**: html/body에서 제거, .app-shell에만 1회 적용, 100dvh 사용, 배경색 #1a1a2e로 노치 영역 자연스럽게 | `e0afc3d` |
+| 5 | **스캔 Content-Type 수정**: FormData 전송 시 Content-Type을 undefined로 설정하여 boundary 자동 포함, 타임아웃 60초 확대, 에러 메시지 개선 | `e0afc3d` |
+| 6 | **Multer 메모리 스토리지 전환**: diskStorage→memoryStorage, uploads/ 폴더 의존성 제거, visionService가 Buffer 직접 사용 | `537229e` |
+| 7 | **스캔 자동 타임라인 저장**: 스캔 성공 시 별도 버튼 없이 자동 기록, 실패 시에만 수동 저장 가능 | `2c39256` |
+| 8 | **고양이 목록 자동 로드**: AuthenticatedApp 마운트 시 /api/cats 호출하여 selectedCat 즉시 설정 | `be2fd8c` |
+| 9 | **Vision API 진단**: 테스트 스크립트로 403 BILLING_DISABLED 에러 확인 → 사용자에게 결제 활성화 안내 | — |
+| 10 | **Vision API 키 갱신**: 새 키(AIzaSyB2rVYi6tcdzUkIh6EPD051zN5vHjzrSaY)로 .env 업데이트 | — |
+| 11 | **타임라인 상세 모달**: ScanLog에 scanData(Mixed)/memo(String) 필드 추가, 스캔 자동저장 시 결과 전체 저장, TimelineDetailModal 컴포넌트(식물스캔 상세/OCR 상세/메모 편집), 카드 클릭→모달 연동 | `85db0e7` |
+| 12 | **기억이식 파일 업데이트** | (이번 커밋) |
+
+**세션 요약:**
+- Google OAuth 외에 이메일/비밀번호 인증 추가 (bcryptjs 해싱, 6자 이상 비밀번호)
+- PWA 레이아웃 3가지 버그 수정: Safe Area 3중 적용, FormData boundary 누락, Multer 디스크 저장 ENOENT
+- Vision API 결제(Billing) 미활성화 문제 진단 → 사용자가 Cloud Console에서 해결
+- 스캔 결과 자동 타임라인 기록 + 상세 데이터(scanData) 함께 저장
+- 타임라인 카드 클릭 시 상세 모달: 식별 항목, 추출 텍스트, 유해 성분, 증상, 메모 편집
+
+**현재 Render.com 환경변수 목록:**
+| 변수 | 설명 |
+|------|------|
+| `MONGODB_URI` | MongoDB Atlas 연결 문자열 |
+| `OPENAI_API_KEY` | OpenAI API 키 |
+| `GOOGLE_CLOUD_VISION_API_KEY` | Vision API 키 (갱신됨) |
+| `GOOGLE_CLIENT_ID` | Google OAuth 클라이언트 ID |
+| `JWT_SECRET` | JWT 서명 비밀키 |
+| `VITE_GOOGLE_CLIENT_ID` | 프론트엔드 Google Client ID |
+| `NODE_ENV` | production |
 
 ---
 
