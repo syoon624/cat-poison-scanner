@@ -112,7 +112,8 @@ export const scanImage = async (imageFile, scanType = 'object') => {
   formData.append('scanType', scanType);
 
   const response = await apiClient.post('/api/scan/image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined },
+    timeout: 60000,
   });
   return response.data;
 };

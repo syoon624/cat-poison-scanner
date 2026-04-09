@@ -124,7 +124,11 @@ export default function ScannerPage() {
       setScanResult(result);
       setShowResult(true);
     } catch (error) {
-      console.error('서버 연결 실패:', error.message);
+      console.error('스캔 실패:', error);
+      const serverMsg = error.response?.data?.message;
+      const details = serverMsg
+        || (error.code === 'ECONNABORTED' ? '서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.'
+        : '서버에 연결할 수 없습니다. 네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.');
       const errorResult = {
         success: false,
         scanType,
@@ -132,7 +136,7 @@ export default function ScannerPage() {
           identifiedItem: '인식할 수 없음',
           riskLevel: 'UNKNOWN',
           confidence: 0,
-          details: '서버에 연결할 수 없습니다. 네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.',
+          details,
           symptoms: [],
           category: 'UNKNOWN',
         },
