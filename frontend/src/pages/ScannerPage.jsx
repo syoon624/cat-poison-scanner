@@ -115,7 +115,7 @@ export default function ScannerPage() {
     analyzeImage(file);
   };
 
-  /** 서버에 이미지 분석 요청 */
+  /** 서버에 이미지 분석 요청 + 자동 타임라인 저장 */
   const analyzeImage = async (imageFile) => {
     setIsScanning(true);
     clearScanResult();
@@ -123,6 +123,32 @@ export default function ScannerPage() {
       const result = await scanImage(imageFile, scanType);
       setScanResult(result);
       setShowResult(true);
+
+      // 스캔 성공 시 자동으로 타임라인에 기록
+      if (result.success && selectedCat?._id) {
+        const data = result.result;
+        const isOCR = result.scanType === 'ocr';
+        const type = isOCR ? 'INGREDIENT' : 'PLANT';
+        const content = isOCR
+          ? `성분표 스캔 - ${data.overallRiskLevel === 'TOXIC' ? '위험 성분 검출' : data.overallRiskLevel === 'WARNING' ? '주의 성분 검출' : '안전'}`
+          : `${data.identifiedItem || '알 수 없음'} 스캔`;
+        const riskLevel = isOCR ? (data.overallRiskLevel || 'NONE') : (data.riskLevel || 'NONE');
+
+        try {
+          const tlResult = await addTimelineEntry({
+            catId: selectedCat._id,
+            type,
+            content,
+            riskLevel,
+          });
+          if (tlResult.success) {
+            addToStore(tlResult.entry);
+            setSavedToTimeline(true);
+          }
+        } catch (tlErr) {
+          console.warn('타임라인 자동 저장 실패:', tlErr.message);
+        }
+      }
     } catch (error) {
       console.error('스캔 실패:', error);
       const serverMsg = error.response?.data?.message;
@@ -304,7 +330,7 @@ export default function ScannerPage() {
                   onClick={saveToTimeline}
                   disabled={savedToTimeline}
                 >
-                  {savedToTimeline ? '✅ 저장됨' : '📅 타임라인에 저장'}
+                  {savedToTimeline ? '✅ 타임라인에 기록됨' : '📅 타임라인에 저장'}
                 </button>
               )}
               <button className="close-btn" onClick={closeResult}>닫기</button>
